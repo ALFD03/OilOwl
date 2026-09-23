@@ -223,3 +223,4 @@ frontend/dist/
 .vercel
 .env*
 !.env.example
+!frontend/src/lib/
