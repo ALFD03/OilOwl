@@ -66,6 +66,8 @@ Variables de entorno del proyecto `oil-owl` (production/preview). Ya están carg
 | `ALLOWED_HOSTS` | `.vercel.app` y dominios propios |
 | `CACHE_URL` | Opcional: Redis para los rate limits |
 
+Para crear el primer administrador: `./scripts/create-superuser.sh` (desde la raíz; pide usuario, correo y contraseña).
+
 Las migraciones se ejecutan desde una máquina de confianza, nunca durante el build. Se usa el pooler en modo sesión (puerto 5432):
 
 ```bash
