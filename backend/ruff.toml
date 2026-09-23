@@ -1,0 +1,11 @@
+line-length = 120
+target-version = "py312"
+extend-exclude = ["**/migrations/*"]
+
+[lint]
+select = ["E", "F", "I", "B", "UP", "S"]
+# E501: el formateador controla el largo; B039: el default del ContextVar es un dataclass inmutable.
+ignore = ["E501", "S101", "S105", "S106", "B039", "B904", "UP038"]
+
+[lint.per-file-ignores]
+"tests/*" = ["S107", "E402"]
