@@ -1,0 +1,88 @@
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import type { ReactNode } from 'react'
+
+import { cn } from '../../lib/cn'
+import { Skeleton } from '../ui/Spinner'
+
+export interface Column<T> {
+  key: string
+  label: string
+  render?: (row: T) => ReactNode
+  className?: string
+  numeric?: boolean
+}
+
+interface Props<T> {
+  columns: Column<T>[]
+  rows: T[] | undefined
+  loading?: boolean
+  empty?: string
+  rowKey?: (row: T) => string
+  onRowClick?: (row: T) => void
+  actions?: (row: T) => ReactNode
+  footer?: ReactNode
+}
+
+export function DataTable<T extends object>({ columns, rows, loading, empty = 'Sin registros', rowKey, onRowClick, actions, footer }: Props<T>) {
+  return (
+    <div className="card animate-fade-up overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="table-base">
+          <thead>
+            <tr>
+              {columns.map((c) => (
+                <th key={c.key} className={cn(c.numeric && 'num', c.className)}>{c.label}</th>
+              ))}
+              {actions && <th className="w-px" />}
+            </tr>
+          </thead>
+          <tbody>
+            {loading && !rows?.length &&
+              Array.from({ length: 4 }, (_, i) => (
+                <tr key={`sk-${i}`}>
+                  {columns.map((c) => <td key={c.key}><Skeleton className="h-4 w-3/4" /></td>)}
+                  {actions && <td />}
+                </tr>
+              ))}
+            {!loading && !rows?.length && (
+              <tr>
+                <td colSpan={columns.length + 1} className="py-14 text-center">
+                  <img src="/brand/isotipo.webp" alt="" className="mx-auto mb-3 size-10 opacity-30 grayscale" />
+                  <span className="text-muted text-sm">{empty}</span>
+                </td>
+              </tr>
+            )}
+            {rows?.map((row, index) => (
+              <tr
+                key={rowKey ? rowKey(row) : String((row as { id?: string }).id ?? index)}
+                className={cn('animate-fade-in', onRowClick && 'cursor-pointer')}
+                onClick={onRowClick ? () => onRowClick(row) : undefined}
+              >
+                {columns.map((c) => (
+                  <td key={c.key} className={cn(c.numeric && 'num', c.className)}>
+                    {c.render ? c.render(row) : String((row as Record<string, unknown>)[c.key] ?? '—')}
+                  </td>
+                ))}
+                {actions && <td className="whitespace-nowrap" onClick={(e) => e.stopPropagation()}>{actions(row)}</td>}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {footer}
+    </div>
+  )
+}
+
+export function Pagination({ page, pages, count, onChange }: { page: number; pages: number; count: number; onChange: (page: number) => void }) {
+  if (pages <= 1) return <div className="border-base text-muted border-t px-4 py-2.5 text-xs">{count} registro(s)</div>
+  return (
+    <div className="border-base flex items-center justify-between border-t px-4 py-2 text-xs">
+      <span className="text-muted">{count} registros · página {page} de {pages}</span>
+      <div className="flex gap-1">
+        <button className="btn-secondary px-2 py-1.5" disabled={page <= 1} onClick={() => onChange(page - 1)} aria-label="Anterior"><ChevronLeft className="size-4" /></button>
+        <button className="btn-secondary px-2 py-1.5" disabled={page >= pages} onClick={() => onChange(page + 1)} aria-label="Siguiente"><ChevronRight className="size-4" /></button>
+      </div>
+    </div>
+  )
+}

@@ -216,3 +216,12 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- OilOwl ---
+node_modules/
+frontend/dist/
+.vercel
+.env*
+!.env.example
+!frontend/src/lib/
+backups/
