@@ -52,29 +52,40 @@ npm test && npx tsc -b && npx oxlint src
 
 Después de cambiar la API, regenere el contrato con `python manage.py spectacular --file openapi.yml` (en `backend/`) y luego `npm run gen:api` (en `frontend/`).
 
-## Producción (Vercel + Supabase)
+## Entornos (Vercel + Supabase)
 
-Variables de entorno del proyecto `oil-owl` (production/preview). Ya están cargadas como *sensitive*:
+| Entorno | Vercel | Supabase | Secretos locales |
+| --- | --- | --- | --- |
+| **Producción** | Despliegues de `main` (*production*) | `OilOwl` (`hmoacgzgbkxjqjllfjxv`), rol `postgres` | `.env.production.local` |
+| **QA** | `develop` y PRs (*preview*) | `OilOwl-QA` (`ggftvymcrfvffvwfpkvc`), rol dedicado `oilowl_app` | `.env.qa.local` |
+
+Cada entorno tiene su base de datos y **sus propias llaves**: un dato cifrado o un cierre de QA no es válido en producción, y viceversa. Los archivos `.env.*.local` no se versionan. **Respáldelos**: si se pierde `FIELD_ENCRYPTION_KEYS`, los datos cifrados de ese entorno son irrecuperables.
 
 | Variable | Descripción |
 | --- | --- |
 | `DATABASE_URL` | Pooler de Supabase en modo transacción (puerto 6543) |
 | `DJANGO_SECRET_KEY`, `JWT_SIGNING_KEY` | Llaves de firma |
-| `FIELD_ENCRYPTION_KEYS` | Llaves Fernet separadas por coma (la primera cifra). **Respaldar: si se pierde, los datos cifrados son irrecuperables** |
+| `FIELD_ENCRYPTION_KEYS` | Llaves Fernet separadas por coma (la primera cifra) |
 | `HASH_CHAIN_KEY` | HMAC de la cadena de cierres. No debe cambiarse |
 | `CRON_SECRET` | Protege `/api/cron/fetch-rate` (Vercel Cron, diario a las 07:00 VET) |
 | `ALLOWED_HOSTS` | `.vercel.app` y dominios propios |
 | `CACHE_URL` | Opcional: Redis para los rate limits |
 
-Para crear el primer administrador: `./scripts/create-superuser.sh` (desde la raíz; pide usuario, correo y contraseña).
-
-Las migraciones se ejecutan desde una máquina de confianza, nunca durante el build. Se usa el pooler en modo sesión (puerto 5432):
+Tareas administrativas, siempre desde una máquina de confianza y nunca durante el build:
 
 ```bash
-cd backend
-set -a && . ../.env.production.local && set +a
+./scripts/create-superuser.sh prod     # o: qa
+# Migraciones (pooler en modo sesión, puerto 5432):
+cd backend && set -a && . ../.env.qa.local && set +a
 DATABASE_URL="${DATABASE_URL/:6543/:5432}" .venv/bin/python manage.py migrate
+.venv/bin/python manage.py seed_catalog && .venv/bin/python manage.py seed_roles   # datos base opcionales
 ```
+
+Flujo recomendado: se prueba en QA (preview de `develop`) y, una vez validado, se fusiona a `main`. Las migraciones se aplican en QA primero y luego en producción.
+
+## Identidad visual
+
+Sistema **Night & Gold**: Azul Medianoche `#050A14` (fondo), Oro Bruñido `#C5A059` (marca y acentos), Gris Grafito `#808080` (texto secundario) y Blanco `#FFFFFF` (texto). Tipografías autoalojadas: **Bodoni Moda** para la marca y los titulares, **Inter** para la interfaz. Los tokens están en `frontend/src/index.css`; el modo oscuro es el predeterminado y el claro es opcional.
 
 ## Tasa BCV
 
