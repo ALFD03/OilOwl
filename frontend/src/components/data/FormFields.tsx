@@ -7,6 +7,7 @@ import type { FieldValues, Path, UseFormReturn } from 'react-hook-form'
 import type { Resource } from '../../api/resource'
 import { useStation } from '../../lib/stationContext'
 import { Field } from '../ui/Field'
+import { Switch } from '../ui/Switch'
 
 export type FieldType =
   | 'text' | 'textarea' | 'number' | 'decimal' | 'date' | 'time' | 'datetime' | 'checkbox' | 'select' | 'relation' | 'password' | 'color'
@@ -48,10 +49,12 @@ function RelationSelect({ spec, register, disabled }: { spec: FieldSpec; registe
   )
 }
 
-export function FormFields<T extends FieldValues>({ fields, form, editing }: { fields: FieldSpec[]; form: UseFormReturn<T>; editing: boolean }) {
+const GRID = { 1: 'grid-cols-1', 2: 'grid-cols-1 md:grid-cols-2', 3: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' } as const
+
+export function FormFields<T extends FieldValues>({ fields, form, editing, columns = 2 }: { fields: FieldSpec[]; form: UseFormReturn<T>; editing: boolean; columns?: 1 | 2 | 3 }) {
   const { register, formState } = form
   return (
-    <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2 xl:grid-cols-3">
+    <div className={`grid gap-x-6 gap-y-5 ${GRID[columns]}`}>
       {fields
         .filter((f) => !(editing && f.hideOnEdit) && !(!editing && f.hideOnCreate))
         .map((spec) => {
@@ -66,10 +69,15 @@ export function FormFields<T extends FieldValues>({ fields, form, editing }: { f
           let control
           if (type === 'checkbox') {
             return (
-              <label key={spec.name} className="flex items-center gap-2 self-end pb-2 text-sm">
-                <input type="checkbox" className="size-4 accent-brand-500" {...register(name)} disabled={disabled} />
-                {spec.label}
-              </label>
+              <div key={spec.name} className="self-end">
+                <Switch
+                  label={spec.label}
+                  description={spec.hint}
+                  checked={!!form.watch(name)}
+                  disabled={disabled}
+                  onChange={(value) => form.setValue(name, value as never, { shouldDirty: true })}
+                />
+              </div>
             )
           } else if (type === 'select') {
             control = (

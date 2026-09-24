@@ -8,32 +8,27 @@ import { Can } from '../../auth/Can'
 import { DataTable, Pagination } from '../../components/data/DataTable'
 import { ErrorAlert } from '../../components/ui/Alert'
 import { Badge } from '../../components/ui/Badge'
+import { ChoiceChips } from '../../components/ui/ChoiceChips'
 import { Field } from '../../components/ui/Field'
 import { ConfirmModal, Modal, ModalActions } from '../../components/ui/Modal'
+import { MultiSelect } from '../../components/ui/MultiSelect'
 import { PageHeader } from '../../components/ui/PageHeader'
+import { Switch } from '../../components/ui/Switch'
 import { dateTime } from '../../lib/format'
 import { useStation } from '../../lib/stationContext'
 import { PermissionPicker } from './PermissionPicker'
 
 type Draft = Partial<User> & { password?: string; stations?: string[] }
 
-function CheckList({ items, value, onChange }: { items: { id: string | number; label: string }[]; value: (string | number)[]; onChange: (v: (string | number)[]) => void }) {
-  const set = new Set(value.map(String))
+function Section({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
   return (
-    <div className="border-base grid max-h-40 grid-cols-1 gap-1 overflow-y-auto rounded-lg border p-2 sm:grid-cols-2">
-      {items.map((item) => (
-        <label key={item.id} className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            className="accent-brand-500"
-            checked={set.has(String(item.id))}
-            onChange={(e) => onChange(e.target.checked ? [...value, item.id] : value.filter((v) => String(v) !== String(item.id)))}
-          />
-          {item.label}
-        </label>
-      ))}
-      {!items.length && <span className="text-muted text-xs">Sin opciones</span>}
-    </div>
+    <section className="space-y-3">
+      <div>
+        <h3 className="text-sm font-semibold">{title}</h3>
+        {description && <p className="text-muted text-xs">{description}</p>}
+      </div>
+      {children}
+    </section>
   )
 }
 
@@ -120,34 +115,48 @@ export function UsersPage() {
         footer={list.data && <Pagination page={list.data.page} pages={list.data.pages} count={list.data.count} onChange={setPage} />}
       />
 
-      <Modal open={!!draft} title={draft?.id ? 'Editar usuario' : 'Nuevo usuario'} onClose={() => setDraft(null)}>
+      <Modal open={!!draft} title={draft?.id ? 'Editar usuario' : 'Nuevo usuario'} onClose={() => setDraft(null)} size="xl">
         {draft && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Usuario *"><input className="input" value={draft.username ?? ''} onChange={(e) => setDraft({ ...draft, username: e.target.value })} /></Field>
-              <Field label="Correo"><input className="input" type="email" value={draft.email ?? ''} onChange={(e) => setDraft({ ...draft, email: e.target.value })} /></Field>
-              <Field label="Nombre"><input className="input" value={draft.first_name ?? ''} onChange={(e) => setDraft({ ...draft, first_name: e.target.value })} /></Field>
-              <Field label="Apellido"><input className="input" value={draft.last_name ?? ''} onChange={(e) => setDraft({ ...draft, last_name: e.target.value })} /></Field>
-              {!draft.id && (
-                <Field label="Contraseña inicial *" hint="Mínimo 10 caracteres.">
-                  <input className="input" type="password" autoComplete="new-password" value={draft.password ?? ''} onChange={(e) => setDraft({ ...draft, password: e.target.value })} />
-                </Field>
-              )}
-              <div className="flex flex-col justify-end gap-2 pb-1 text-sm">
-                <label className="flex items-center gap-2"><input type="checkbox" className="accent-brand-500" checked={!!draft.is_active} onChange={(e) => setDraft({ ...draft, is_active: e.target.checked })} /> Activo</label>
-                <label className="flex items-center gap-2"><input type="checkbox" className="accent-brand-500" checked={!!draft.must_change_password} onChange={(e) => setDraft({ ...draft, must_change_password: e.target.checked })} /> Debe cambiar la contraseña al ingresar</label>
+          <div className="space-y-7">
+            <Section title="Datos del usuario">
+              <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
+                <Field label="Usuario *"><input className="input" value={draft.username ?? ''} onChange={(e) => setDraft({ ...draft, username: e.target.value })} /></Field>
+                <Field label="Correo"><input className="input" type="email" value={draft.email ?? ''} onChange={(e) => setDraft({ ...draft, email: e.target.value })} /></Field>
+                <Field label="Nombre"><input className="input" value={draft.first_name ?? ''} onChange={(e) => setDraft({ ...draft, first_name: e.target.value })} /></Field>
+                <Field label="Apellido"><input className="input" value={draft.last_name ?? ''} onChange={(e) => setDraft({ ...draft, last_name: e.target.value })} /></Field>
+                {!draft.id && (
+                  <Field label="Contraseña inicial *" hint="Mínimo 10 caracteres." className="md:col-span-2">
+                    <input className="input" type="password" autoComplete="new-password" value={draft.password ?? ''} onChange={(e) => setDraft({ ...draft, password: e.target.value })} />
+                  </Field>
+                )}
               </div>
-            </div>
-            <Field label="Estaciones">
-              <CheckList items={stations.map((s) => ({ id: s.id, label: s.name }))} value={draft.stations ?? []} onChange={(v) => setDraft({ ...draft, stations: v.map(String) })} />
-            </Field>
-            <Field label="Roles">
-              <CheckList items={(roleList.data ?? []).map((r) => ({ id: r.id, label: r.name }))} value={draft.roles ?? []} onChange={(v) => setDraft({ ...draft, roles: v.map(Number) })} />
-            </Field>
-            <div>
-              <span className="label">Permisos adicionales</span>
+            </Section>
+            <Section title="Acceso">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <Switch label="Usuario activo" description="Si se desactiva no podrá ingresar; su historial se conserva." checked={!!draft.is_active} onChange={(is_active) => setDraft({ ...draft, is_active })} />
+                <Switch label="Cambiar contraseña al ingresar" description="Se le pedirá una contraseña nueva en su próximo acceso." checked={!!draft.must_change_password} onChange={(must_change_password) => setDraft({ ...draft, must_change_password })} />
+              </div>
+            </Section>
+            <Section title="Roles" description="Los permisos de los roles se suman a los permisos adicionales.">
+              <MultiSelect
+                placeholder="Seleccione uno o varios roles…"
+                searchPlaceholder="Buscar rol…"
+                options={(roleList.data ?? []).map((r) => ({ value: String(r.id), label: r.name, hint: `${r.permissions?.length ?? 0} permisos · ${r.user_count} usuarios` }))}
+                value={(draft.roles ?? []).map(String)}
+                onChange={(v) => setDraft({ ...draft, roles: v.map(Number) })}
+              />
+            </Section>
+            <Section title="Estaciones" description="El usuario solo verá y operará las estaciones seleccionadas.">
+              <ChoiceChips
+                choices={stations.map((st) => ({ value: st.id, label: st.name }))}
+                value={draft.stations ?? []}
+                onChange={(v) => setDraft({ ...draft, stations: v })}
+                empty="No tiene estaciones asignadas para otorgar."
+              />
+            </Section>
+            <Section title="Permisos adicionales" description="Opcional: permisos puntuales además de los que dan sus roles.">
               <PermissionPicker value={draft.permissions ?? []} onChange={(permissions) => setDraft({ ...draft, permissions })} />
-            </div>
+            </Section>
             <ErrorAlert error={create.error ?? update.error} />
             <ModalActions>
               <button className="btn-secondary" onClick={() => setDraft(null)}>Cancelar</button>
@@ -157,7 +166,7 @@ export function UsersPage() {
         )}
       </Modal>
 
-      <Modal open={!!pwdUser} title={`Restablecer contraseña de ${pwdUser?.username}`} onClose={() => setPwdUser(null)}>
+      <Modal open={!!pwdUser} title={`Restablecer contraseña de ${pwdUser?.username}`} onClose={() => setPwdUser(null)} size="sm">
         <div className="space-y-4">
           <Field label="Nueva contraseña" hint="El usuario deberá cambiarla al ingresar.">
             <input className="input" type="password" autoComplete="new-password" value={newPwd} onChange={(e) => setNewPwd(e.target.value)} />

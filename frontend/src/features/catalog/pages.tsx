@@ -30,11 +30,9 @@ export const StationsPage = () => (
 export const FuelTypesPage = () => (
   <CrudPage<Row>
     title="Combustibles" singular="combustible" resource={fuelTypes} perm="catalog.fueltype"
-    columns={[
-      { key: 'color', label: '', render: (r) => <span className="inline-block size-3 rounded-full" style={{ background: String(r.color) }} /> },
-      ...baseColumns, activeColumn,
-    ]}
-    fields={[...codeName, { name: 'color', label: 'Color', type: 'color' }, activeField]}
+    description="En los gráficos, cada combustible recibe un color fijo de la paleta de la marca."
+    columns={[...baseColumns, activeColumn]}
+    fields={[...codeName, activeField]}
   />
 )
 

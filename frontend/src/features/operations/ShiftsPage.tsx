@@ -65,7 +65,7 @@ export function ShiftsPage() {
         ]}
         footer={list.data && <Pagination page={list.data.page} pages={list.data.pages} count={list.data.count} onChange={setPage} />}
       />
-      <Modal open={open} title="Abrir jornada" onClose={() => setOpen(false)}>
+      <Modal open={open} title="Abrir jornada" onClose={() => setOpen(false)} size="md">
         <div className="space-y-4">
           {latest ? (
             <Alert>Tasa BCV vigente: <strong>{rate(latest.rate)} Bs/$</strong> (fecha valor {date(latest.valid_date)}).</Alert>

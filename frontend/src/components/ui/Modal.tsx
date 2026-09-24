@@ -11,23 +11,25 @@ import { createPortal } from 'react-dom'
 
 import { cn } from '../../lib/cn'
 
-type Size = 'sm' | 'xl'
+export type ModalSize = 'sm' | 'md' | 'lg' | 'xl'
 
-const SIZES: Record<Size, string> = {
-  // Formularios y detalles: casi toda la pantalla, con desplazamiento interno.
-  xl: 'w-[96vw] max-w-7xl min-h-[min(80vh,720px)] max-h-[92vh]',
-  // Confirmaciones breves.
-  sm: 'w-full max-w-lg max-h-[92vh]',
+// El alto se ajusta al contenido (hasta el 92 % de la pantalla, luego desplaza por dentro)
+// y el ancho depende del tipo de contenido. En pantallas pequeñas todos ocupan el ancho útil.
+const SIZES: Record<ModalSize, string> = {
+  sm: 'max-w-lg', // confirmaciones
+  md: 'max-w-2xl', // formularios cortos
+  lg: 'max-w-4xl', // formularios medianos
+  xl: 'max-w-6xl', // formularios extensos, permisos, detalle de auditoría
 }
 
 export function Modal({
-  open, title, onClose, children, size = 'xl', description,
+  open, title, onClose, children, size = 'lg', description,
 }: {
   open: boolean
   title: string
   onClose: () => void
   children: ReactNode
-  size?: Size
+  size?: ModalSize
   description?: ReactNode
 }) {
   useEffect(() => {
@@ -52,7 +54,7 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={cn('card animate-scale-in flex flex-col overflow-hidden shadow-[var(--shadow-lg)]', SIZES[size])}
+        className={cn('card animate-scale-in flex max-h-[92vh] w-full flex-col overflow-hidden shadow-[var(--shadow-lg)]', SIZES[size])}
         onMouseDown={(e) => e.stopPropagation()}
       >
         <header className="border-base flex shrink-0 items-start justify-between gap-4 border-b px-6 py-4 sm:px-8">

@@ -105,6 +105,10 @@ export function CrudPage<T extends Row>(config: CrudConfig<T>) {
     }
   })
 
+  const visibleFields = config.fields.filter((f) => !(editing && f.hideOnEdit) && !(!editing && f.hideOnCreate)).length
+  const modalSize = visibleFields <= 3 ? 'md' : visibleFields <= 6 ? 'lg' : 'xl'
+  const columns = visibleFields <= 3 ? 1 : visibleFields <= 6 ? 2 : 3
+
   const data = list.data
   const mutationError = create.error ?? update.error
   const showActions = (config.canEdit !== false && !config.appendOnly && canChange) || config.extraActions || config.canDeactivate !== false
@@ -154,9 +158,9 @@ export function CrudPage<T extends Row>(config: CrudConfig<T>) {
         footer={data && <Pagination page={data.page} pages={data.pages} count={data.count} onChange={setPage} />}
       />
 
-      <Modal open={creating || !!editing} title={`${editing ? 'Editar' : 'Registrar'} ${config.singular}`} onClose={close}>
+      <Modal open={creating || !!editing} title={`${editing ? 'Editar' : 'Registrar'} ${config.singular}`} onClose={close} size={modalSize}>
         <form onSubmit={submit} className="space-y-4" noValidate>
-          <FormFields fields={config.fields} form={form} editing={!!editing} />
+          <FormFields fields={config.fields} form={form} editing={!!editing} columns={columns} />
           <ErrorAlert error={mutationError} />
           {config.appendOnly && <p className="text-muted text-xs">Este registro no podrá modificarse ni eliminarse después de guardarlo.</p>}
           <ModalActions>

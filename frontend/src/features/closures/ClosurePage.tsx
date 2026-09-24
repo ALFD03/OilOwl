@@ -364,7 +364,7 @@ function Adjustments({ closure }: { closure: Closure }) {
           { key: 'liters', label: 'Litros', numeric: true, render: (a) => signedLiters(a.liters) },
         ]}
       />
-      <Modal open={open} title="Registrar ajuste" onClose={() => setOpen(false)}>
+      <Modal open={open} title="Registrar ajuste" onClose={() => setOpen(false)} size="md">
         <div className="space-y-4">
           <Alert tone="warning">El ajuste es permanente: no podrá editarse ni eliminarse.</Alert>
           <Field label="Motivo *"><input className="input" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} /></Field>

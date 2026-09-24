@@ -36,7 +36,7 @@ function OpenIslandModal({ shift, island, onClose }: { shift: Shift; island: Isl
   }
 
   return (
-    <Modal open title={`Abrir ${island.name}`} onClose={onClose}>
+    <Modal open title={`Abrir ${island.name}`} onClose={onClose} size="md">
       <div className="space-y-4">
         <Field label="Bombero responsable" hint={suggested ? 'Sugerido según el horario.' : undefined}>
           <select className="input" value={attendant || suggested || ''} onChange={(e) => setAttendant(e.target.value)}>
@@ -81,7 +81,7 @@ function SetRateModal({ shift, onClose }: { shift: Shift; onClose: () => void })
     setRate.mutateAsync({ id: shift.id, body }).then(onClose).catch(() => undefined)
 
   return (
-    <Modal open title="Cambiar tasa de la jornada" onClose={onClose}>
+    <Modal open title="Cambiar tasa de la jornada" onClose={onClose} size="md">
       <div className="space-y-4 text-sm">
         <p className="text-soft">
           Tasa actual: <strong>{rate(shift.rate)} Bs/$</strong>. Los cierres de esta jornada (todos deben estar en borrador) se recalculan con la nueva tasa.

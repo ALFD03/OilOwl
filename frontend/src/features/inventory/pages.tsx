@@ -110,7 +110,7 @@ export function ReconciliationsPage() {
         ]}
         footer={list.data && <Pagination page={list.data.page} pages={list.data.pages} count={list.data.count} onChange={setPage} />}
       />
-      <Modal open={open} title="Conciliar tanque" onClose={() => setOpen(false)}>
+      <Modal open={open} title="Conciliar tanque" onClose={() => setOpen(false)} size="md">
         <div className="space-y-4">
           <Field label="Tanque *">
             <select className="input" value={tank} onChange={(e) => { setTank(e.target.value); setReading('') }}>

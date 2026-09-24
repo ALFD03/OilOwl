@@ -82,6 +82,18 @@
   --negative: #f87171;
   --info: #7cc4f5;
   --warning: #e8bb6a;
+  /* Gráficos (validados con dataviz/validate_palette.js contra --surface #0B1322).
+     Orden fijo: oro de marca, azul, aqua, violeta, magenta. */
+  --series-1: #bf8a22;
+  --series-2: #3987e5;
+  --series-3: #199e70;
+  --series-4: #9085e9;
+  --series-5: #d55181;
+  --diverge-neg: #e66767;
+  --diverge-pos: #3987e5;
+  --chart-grid: rgb(255 255 255 / 0.06);
+  --chart-axis: rgb(255 255 255 / 0.14);
+  --chart-cursor: rgb(197 160 89 / 0.08);
   --backdrop: radial-gradient(1200px 600px at 10% -10%, rgb(197 160 89 / 0.09), transparent 60%),
     radial-gradient(900px 500px at 110% 10%, rgb(56 88 150 / 0.12), transparent 60%);
   color-scheme: dark;
@@ -108,6 +120,17 @@
   --negative: #c42b37;
   --info: #0369a1;
   --warning: #a16207;
+  /* Validados contra --surface #FFFFFF: todos >= 3:1. */
+  --series-1: #a87a1c;
+  --series-2: #2a78d6;
+  --series-3: #128a60;
+  --series-4: #4a3aa7;
+  --series-5: #d3547f;
+  --diverge-neg: #d03b3b;
+  --diverge-pos: #2a78d6;
+  --chart-grid: rgb(5 10 20 / 0.07);
+  --chart-axis: rgb(5 10 20 / 0.16);
+  --chart-cursor: rgb(176 140 69 / 0.1);
   --backdrop: radial-gradient(1200px 600px at 10% -10%, rgb(197 160 89 / 0.14), transparent 60%);
   color-scheme: light;
 }

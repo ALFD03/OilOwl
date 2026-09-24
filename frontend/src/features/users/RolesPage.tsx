@@ -53,7 +53,7 @@ export function RolesPage() {
           </div>
         )}
       />
-      <Modal open={!!editing} title={editing?.id ? 'Editar rol' : 'Nuevo rol'} onClose={() => setEditing(null)}>
+      <Modal open={!!editing} title={editing?.id ? 'Editar rol' : 'Nuevo rol'} onClose={() => setEditing(null)} size="xl" description="Un rol agrupa permisos. Use los atajos para seleccionar módulos completos o solo consulta.">
         {editing && (
           <div className="space-y-4">
             <Field label="Nombre *"><input className="input" value={editing.name ?? ''} onChange={(e) => setEditing({ ...editing, name: e.target.value })} /></Field>
