@@ -42,6 +42,7 @@ class DenominationViewSet(BaseModelViewSet):
 class IslandViewSet(BaseModelViewSet):
     queryset = Island.objects.select_related("station")
     serializer_class = s.IslandSerializer
+    ordering = ["code"]  # ESTACIÓN-TIPO-#### en orden correlativo
     station_field = "station"
     filterset_fields = CATALOG_FILTERS
     search_fields = CATALOG_SEARCH
@@ -50,6 +51,7 @@ class IslandViewSet(BaseModelViewSet):
 class PumpViewSet(BaseModelViewSet):
     queryset = Pump.objects.select_related("island", "fuel_type", "tank")
     serializer_class = s.PumpSerializer
+    ordering = ["code"]  # ESTACIÓN-TIPO-#### en orden correlativo
     station_field = "island__station"
     filterset_fields = CATALOG_FILTERS + ["island", "fuel_type", "tank"]
     search_fields = CATALOG_SEARCH
@@ -58,6 +60,7 @@ class PumpViewSet(BaseModelViewSet):
 class PaymentTerminalViewSet(BaseModelViewSet):
     queryset = PaymentTerminal.objects.all()
     serializer_class = s.PaymentTerminalSerializer
+    ordering = ["code"]  # ESTACIÓN-TIPO-#### en orden correlativo
     station_field = "station"
     filterset_fields = CATALOG_FILTERS + ["kind", "currency"]
     search_fields = CATALOG_SEARCH + ["bank", "serial"]
@@ -66,6 +69,7 @@ class PaymentTerminalViewSet(BaseModelViewSet):
 class AttendantViewSet(BaseModelViewSet):
     queryset = Attendant.objects.all()
     serializer_class = s.AttendantSerializer
+    ordering = ["code"]  # ESTACIÓN-TIPO-#### en orden correlativo
     station_field = "station"
     filterset_fields = CATALOG_FILTERS
     search_fields = CATALOG_SEARCH

@@ -29,6 +29,12 @@ export interface FieldSpec {
   hideOnEdit?: boolean
   hideOnCreate?: boolean
   step?: string
+  /** Convierte a mayúsculas mientras se escribe (p. ej. prefijo de estación). */
+  uppercase?: boolean
+  maxLength?: number
+  /** Expresión regular que debe cumplir el valor completo. */
+  pattern?: string
+  placeholder?: string
   span?: 1 | 2
 }
 
@@ -62,7 +68,12 @@ export function FormFields<T extends FieldValues>({ fields, form, editing, colum
           const disabled = editing && spec.readOnlyOnEdit
           const reg = register(name, {
             required: spec.required && spec.type !== 'checkbox' ? 'Campo obligatorio' : false,
-            setValueAs: spec.type === 'checkbox' ? undefined : (v) => (v === '' ? (spec.required ? '' : null) : v),
+            setValueAs: spec.type === 'checkbox' ? undefined : (v) => {
+              const value = spec.uppercase && typeof v === 'string' ? v.trim().toUpperCase() : v
+              return value === '' ? (spec.required ? '' : null) : value
+            },
+            pattern: spec.pattern ? { value: new RegExp(`^${spec.pattern}$`), message: spec.hint ?? 'Formato inválido' } : undefined,
+            maxLength: spec.maxLength ? { value: spec.maxLength, message: `Máximo ${spec.maxLength} caracteres` } : undefined,
           })
           const error = formState.errors[name]?.message as string | undefined
           const type = spec.type ?? 'text'
@@ -94,11 +105,13 @@ export function FormFields<T extends FieldValues>({ fields, form, editing, colum
             const htmlType = { decimal: 'number', datetime: 'datetime-local' }[type as string] ?? type
             control = (
               <input
-                className="input"
                 type={htmlType}
                 step={spec.step ?? (type === 'decimal' ? 'any' : undefined)}
                 inputMode={type === 'decimal' || type === 'number' ? 'decimal' : undefined}
                 autoComplete={type === 'password' ? 'new-password' : 'off'}
+                maxLength={spec.maxLength}
+                placeholder={spec.placeholder}
+                className={spec.uppercase ? 'input font-mono tracking-[0.2em] uppercase' : 'input'}
                 {...reg}
                 disabled={disabled}
               />

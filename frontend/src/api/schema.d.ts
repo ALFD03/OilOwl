@@ -1249,7 +1249,7 @@ export interface components {
              */
             attendant: string;
         };
-        /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
+        /** @description Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`). */
         Attendant: {
             /** Format: uuid */
             readonly id: string;
@@ -1258,7 +1258,7 @@ export interface components {
             /** Format: date-time */
             readonly updated_at: string;
             /** Código */
-            code: string;
+            readonly code: string;
             /** Nombre */
             name: string;
             /** Activo */
@@ -1275,10 +1275,8 @@ export interface components {
              */
             station: string;
         };
-        /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
+        /** @description Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`). */
         AttendantRequest: {
-            /** Código */
-            code: string;
             /** Nombre */
             name: string;
             /** Activo */
@@ -1761,7 +1759,7 @@ export interface components {
             is_active?: boolean;
             color?: string;
         };
-        /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
+        /** @description Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`). */
         Island: {
             /** Format: uuid */
             readonly id: string;
@@ -1770,7 +1768,7 @@ export interface components {
             /** Format: date-time */
             readonly updated_at: string;
             /** Código */
-            code: string;
+            readonly code: string;
             /** Nombre */
             name: string;
             /** Activo */
@@ -1783,10 +1781,8 @@ export interface components {
              */
             station: string;
         };
-        /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
+        /** @description Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`). */
         IslandRequest: {
-            /** Código */
-            code: string;
             /** Nombre */
             name: string;
             /** Activo */
@@ -2054,10 +2050,8 @@ export interface components {
              */
             attendant?: string;
         };
-        /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
+        /** @description Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`). */
         PatchedAttendantRequest: {
-            /** Código */
-            code?: string;
             /** Nombre */
             name?: string;
             /** Activo */
@@ -2106,10 +2100,8 @@ export interface components {
             is_active?: boolean;
             color?: string;
         };
-        /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
+        /** @description Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`). */
         PatchedIslandRequest: {
-            /** Código */
-            code?: string;
             /** Nombre */
             name?: string;
             /** Activo */
@@ -2120,10 +2112,8 @@ export interface components {
              */
             station?: string;
         };
-        /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
+        /** @description El tipo define el código (PV/BP), por eso no se cambia después de crear. */
         PatchedPaymentTerminalRequest: {
-            /** Código */
-            code?: string;
             /** Nombre */
             name?: string;
             /** Activo */
@@ -2141,10 +2131,8 @@ export interface components {
              */
             station?: string;
         };
-        /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
+        /** @description Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`). */
         PatchedPumpRequest: {
-            /** Código */
-            code?: string;
             /** Nombre */
             name?: string;
             /** Activo */
@@ -2197,10 +2185,8 @@ export interface components {
              */
             shift_template?: string | null;
         };
-        /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
+        /** @description Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`). */
         PatchedShiftTemplateRequest: {
-            /** Código */
-            code?: string;
             /** Nombre */
             name?: string;
             /** Activo */
@@ -2221,9 +2207,9 @@ export interface components {
              */
             station?: string;
         };
-        /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
+        /** @description El prefijo (3 letras) se define al crear y no cambia: forma parte de todos los códigos. */
         PatchedStationRequest: {
-            /** Código */
+            /** prefijo */
             code?: string;
             /** Nombre */
             name?: string;
@@ -2235,10 +2221,8 @@ export interface components {
             /** Teléfono */
             phone?: string;
         };
-        /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
+        /** @description Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`). */
         PatchedTankRequest: {
-            /** Código */
-            code?: string;
             /** Nombre */
             name?: string;
             /** Activo */
@@ -2298,7 +2282,7 @@ export interface components {
          * @enum {string}
          */
         PaymentMethodEnum: "CASH_VES" | "CASH_USD" | "POS" | "BIOPAGO";
-        /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
+        /** @description El tipo define el código (PV/BP), por eso no se cambia después de crear. */
         PaymentTerminal: {
             /** Format: uuid */
             readonly id: string;
@@ -2307,7 +2291,7 @@ export interface components {
             /** Format: date-time */
             readonly updated_at: string;
             /** Código */
-            code: string;
+            readonly code: string;
             /** Nombre */
             name: string;
             /** Activo */
@@ -2333,10 +2317,8 @@ export interface components {
          * @enum {string}
          */
         PaymentTerminalKindEnum: "POS" | "BIOPAGO";
-        /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
+        /** @description El tipo define el código (PV/BP), por eso no se cambia después de crear. */
         PaymentTerminalRequest: {
-            /** Código */
-            code: string;
             /** Nombre */
             name: string;
             /** Activo */
@@ -2362,7 +2344,7 @@ export interface components {
             readonly app_label: string;
             readonly model: string;
         };
-        /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
+        /** @description Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`). */
         Pump: {
             /** Format: uuid */
             readonly id: string;
@@ -2374,7 +2356,7 @@ export interface components {
             /** Format: date-time */
             readonly updated_at: string;
             /** Código */
-            code: string;
+            readonly code: string;
             /** Nombre */
             name: string;
             /** Activo */
@@ -2402,10 +2384,8 @@ export interface components {
              */
             tank?: string | null;
         };
-        /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
+        /** @description Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`). */
         PumpRequest: {
-            /** Código */
-            code: string;
             /** Nombre */
             name: string;
             /** Activo */
@@ -2595,7 +2575,7 @@ export interface components {
              */
             shift_template?: string | null;
         };
-        /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
+        /** @description Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`). */
         ShiftTemplate: {
             /** Format: uuid */
             readonly id: string;
@@ -2604,7 +2584,7 @@ export interface components {
             /** Format: date-time */
             readonly updated_at: string;
             /** Código */
-            code: string;
+            readonly code: string;
             /** Nombre */
             name: string;
             /** Activo */
@@ -2627,10 +2607,8 @@ export interface components {
              */
             station: string;
         };
-        /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
+        /** @description Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`). */
         ShiftTemplateRequest: {
-            /** Código */
-            code: string;
             /** Nombre */
             name: string;
             /** Activo */
@@ -2657,16 +2635,16 @@ export interface components {
          * @enum {string}
          */
         SourceEnum: "BCV" | "MANUAL";
-        /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
+        /** @description El prefijo (3 letras) se define al crear y no cambia: forma parte de todos los códigos. */
         Station: {
             /** Format: uuid */
             readonly id: string;
+            /** prefijo */
+            code: string;
             /** Format: date-time */
             readonly created_at: string;
             /** Format: date-time */
             readonly updated_at: string;
-            /** Código */
-            code: string;
             /** Nombre */
             name: string;
             /** Activo */
@@ -2679,9 +2657,9 @@ export interface components {
             readonly created_by: number | null;
             readonly updated_by: number | null;
         };
-        /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
+        /** @description El prefijo (3 letras) se define al crear y no cambia: forma parte de todos los códigos. */
         StationRequest: {
-            /** Código */
+            /** prefijo */
             code: string;
             /** Nombre */
             name: string;
@@ -2700,7 +2678,7 @@ export interface components {
          * @enum {string}
          */
         StatusEnum: "DRAFT" | "SUBMITTED" | "LOCKED";
-        /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
+        /** @description Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`). */
         Tank: {
             /** Format: uuid */
             readonly id: string;
@@ -2713,7 +2691,7 @@ export interface components {
             /** Format: date-time */
             readonly updated_at: string;
             /** Código */
-            code: string;
+            readonly code: string;
             /** Nombre */
             name: string;
             /** Activo */
@@ -2805,10 +2783,8 @@ export interface components {
             /** Format: uuid */
             tank: string;
         };
-        /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
+        /** @description Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`). */
         TankRequest: {
-            /** Código */
-            code: string;
             /** Nombre */
             name: string;
             /** Activo */

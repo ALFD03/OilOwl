@@ -3693,8 +3693,7 @@ components:
       - shift_template
     Attendant:
       type: object
-      description: 'Serializer estándar: los campos de auditoría siempre son de solo
-        lectura.'
+      description: Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`).
       properties:
         id:
           type: string
@@ -3710,8 +3709,8 @@ components:
           readOnly: true
         code:
           type: string
+          readOnly: true
           title: Código
-          maxLength: 32
         name:
           type: string
           title: Nombre
@@ -3748,14 +3747,8 @@ components:
       - updated_by
     AttendantRequest:
       type: object
-      description: 'Serializer estándar: los campos de auditoría siempre son de solo
-        lectura.'
+      description: Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`).
       properties:
-        code:
-          type: string
-          minLength: 1
-          title: Código
-          maxLength: 32
         name:
           type: string
           minLength: 1
@@ -3775,7 +3768,6 @@ components:
           format: uuid
           title: Estación
       required:
-      - code
       - name
       - station
     AuditLog:
@@ -4767,8 +4759,7 @@ components:
       - name
     Island:
       type: object
-      description: 'Serializer estándar: los campos de auditoría siempre son de solo
-        lectura.'
+      description: Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`).
       properties:
         id:
           type: string
@@ -4784,8 +4775,8 @@ components:
           readOnly: true
         code:
           type: string
+          readOnly: true
           title: Código
-          maxLength: 32
         name:
           type: string
           title: Nombre
@@ -4816,14 +4807,8 @@ components:
       - updated_by
     IslandRequest:
       type: object
-      description: 'Serializer estándar: los campos de auditoría siempre son de solo
-        lectura.'
+      description: Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`).
       properties:
-        code:
-          type: string
-          minLength: 1
-          title: Código
-          maxLength: 32
         name:
           type: string
           minLength: 1
@@ -4837,7 +4822,6 @@ components:
           format: uuid
           title: Estación
       required:
-      - code
       - name
       - station
     LineInputRequest:
@@ -5473,14 +5457,8 @@ components:
           title: Bombero
     PatchedAttendantRequest:
       type: object
-      description: 'Serializer estándar: los campos de auditoría siempre son de solo
-        lectura.'
+      description: Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`).
       properties:
-        code:
-          type: string
-          minLength: 1
-          title: Código
-          maxLength: 32
         name:
           type: string
           minLength: 1
@@ -5563,14 +5541,8 @@ components:
           maxLength: 7
     PatchedIslandRequest:
       type: object
-      description: 'Serializer estándar: los campos de auditoría siempre son de solo
-        lectura.'
+      description: Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`).
       properties:
-        code:
-          type: string
-          minLength: 1
-          title: Código
-          maxLength: 32
         name:
           type: string
           minLength: 1
@@ -5585,14 +5557,9 @@ components:
           title: Estación
     PatchedPaymentTerminalRequest:
       type: object
-      description: 'Serializer estándar: los campos de auditoría siempre son de solo
-        lectura.'
+      description: El tipo define el código (PV/BP), por eso no se cambia después
+        de crear.
       properties:
-        code:
-          type: string
-          minLength: 1
-          title: Código
-          maxLength: 32
         name:
           type: string
           minLength: 1
@@ -5622,14 +5589,8 @@ components:
           title: Estación
     PatchedPumpRequest:
       type: object
-      description: 'Serializer estándar: los campos de auditoría siempre son de solo
-        lectura.'
+      description: Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`).
       properties:
-        code:
-          type: string
-          minLength: 1
-          title: Código
-          maxLength: 32
         name:
           type: string
           minLength: 1
@@ -5700,14 +5661,8 @@ components:
           title: Turno
     PatchedShiftTemplateRequest:
       type: object
-      description: 'Serializer estándar: los campos de auditoría siempre son de solo
-        lectura.'
+      description: Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`).
       properties:
-        code:
-          type: string
-          minLength: 1
-          title: Código
-          maxLength: 32
         name:
           type: string
           minLength: 1
@@ -5730,14 +5685,14 @@ components:
           title: Estación
     PatchedStationRequest:
       type: object
-      description: 'Serializer estándar: los campos de auditoría siempre son de solo
-        lectura.'
+      description: 'El prefijo (3 letras) se define al crear y no cambia: forma parte
+        de todos los códigos.'
       properties:
         code:
           type: string
           minLength: 1
-          title: Código
-          maxLength: 32
+          title: prefijo
+          maxLength: 10
         name:
           type: string
           minLength: 1
@@ -5759,14 +5714,8 @@ components:
           maxLength: 30
     PatchedTankRequest:
       type: object
-      description: 'Serializer estándar: los campos de auditoría siempre son de solo
-        lectura.'
+      description: Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`).
       properties:
-        code:
-          type: string
-          minLength: 1
-          title: Código
-          maxLength: 32
         name:
           type: string
           minLength: 1
@@ -5859,8 +5808,8 @@ components:
         * `BIOPAGO` - BioPago
     PaymentTerminal:
       type: object
-      description: 'Serializer estándar: los campos de auditoría siempre son de solo
-        lectura.'
+      description: El tipo define el código (PV/BP), por eso no se cambia después
+        de crear.
       properties:
         id:
           type: string
@@ -5876,8 +5825,8 @@ components:
           readOnly: true
         code:
           type: string
+          readOnly: true
           title: Código
-          maxLength: 32
         name:
           type: string
           title: Nombre
@@ -5932,14 +5881,9 @@ components:
         * `BIOPAGO` - BioPago
     PaymentTerminalRequest:
       type: object
-      description: 'Serializer estándar: los campos de auditoría siempre son de solo
-        lectura.'
+      description: El tipo define el código (PV/BP), por eso no se cambia después
+        de crear.
       properties:
-        code:
-          type: string
-          minLength: 1
-          title: Código
-          maxLength: 32
         name:
           type: string
           minLength: 1
@@ -5968,7 +5912,6 @@ components:
           format: uuid
           title: Estación
       required:
-      - code
       - kind
       - name
       - station
@@ -5999,8 +5942,7 @@ components:
       - name
     Pump:
       type: object
-      description: 'Serializer estándar: los campos de auditoría siempre son de solo
-        lectura.'
+      description: Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`).
       properties:
         id:
           type: string
@@ -6023,8 +5965,8 @@ components:
           readOnly: true
         code:
           type: string
+          readOnly: true
           title: Código
-          maxLength: 32
         name:
           type: string
           title: Nombre
@@ -6073,14 +6015,8 @@ components:
       - updated_by
     PumpRequest:
       type: object
-      description: 'Serializer estándar: los campos de auditoría siempre son de solo
-        lectura.'
+      description: Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`).
       properties:
-        code:
-          type: string
-          minLength: 1
-          title: Código
-          maxLength: 32
         name:
           type: string
           minLength: 1
@@ -6109,7 +6045,6 @@ components:
           nullable: true
           title: Tanque
       required:
-      - code
       - fuel_type
       - island
       - name
@@ -6471,8 +6406,7 @@ components:
       - station
     ShiftTemplate:
       type: object
-      description: 'Serializer estándar: los campos de auditoría siempre son de solo
-        lectura.'
+      description: Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`).
       properties:
         id:
           type: string
@@ -6488,8 +6422,8 @@ components:
           readOnly: true
         code:
           type: string
+          readOnly: true
           title: Código
-          maxLength: 32
         name:
           type: string
           title: Nombre
@@ -6530,14 +6464,8 @@ components:
       - updated_by
     ShiftTemplateRequest:
       type: object
-      description: 'Serializer estándar: los campos de auditoría siempre son de solo
-        lectura.'
+      description: Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`).
       properties:
-        code:
-          type: string
-          minLength: 1
-          title: Código
-          maxLength: 32
         name:
           type: string
           minLength: 1
@@ -6559,7 +6487,6 @@ components:
           format: uuid
           title: Estación
       required:
-      - code
       - end_time
       - name
       - start_time
@@ -6574,13 +6501,17 @@ components:
         * `MANUAL` - Manual
     Station:
       type: object
-      description: 'Serializer estándar: los campos de auditoría siempre son de solo
-        lectura.'
+      description: 'El prefijo (3 letras) se define al crear y no cambia: forma parte
+        de todos los códigos.'
       properties:
         id:
           type: string
           format: uuid
           readOnly: true
+        code:
+          type: string
+          title: prefijo
+          maxLength: 10
         created_at:
           type: string
           format: date-time
@@ -6589,10 +6520,6 @@ components:
           type: string
           format: date-time
           readOnly: true
-        code:
-          type: string
-          title: Código
-          maxLength: 32
         name:
           type: string
           title: Nombre
@@ -6629,14 +6556,14 @@ components:
       - updated_by
     StationRequest:
       type: object
-      description: 'Serializer estándar: los campos de auditoría siempre son de solo
-        lectura.'
+      description: 'El prefijo (3 letras) se define al crear y no cambia: forma parte
+        de todos los códigos.'
       properties:
         code:
           type: string
           minLength: 1
-          title: Código
-          maxLength: 32
+          title: prefijo
+          maxLength: 10
         name:
           type: string
           minLength: 1
@@ -6671,8 +6598,7 @@ components:
         * `LOCKED` - Bloqueado
     Tank:
       type: object
-      description: 'Serializer estándar: los campos de auditoría siempre son de solo
-        lectura.'
+      description: Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`).
       properties:
         id:
           type: string
@@ -6696,8 +6622,8 @@ components:
           readOnly: true
         code:
           type: string
+          readOnly: true
           title: Código
-          maxLength: 32
         name:
           type: string
           title: Nombre
@@ -6847,14 +6773,8 @@ components:
       - tank
     TankRequest:
       type: object
-      description: 'Serializer estándar: los campos de auditoría siempre son de solo
-        lectura.'
+      description: Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`).
       properties:
-        code:
-          type: string
-          minLength: 1
-          title: Código
-          maxLength: 32
         name:
           type: string
           minLength: 1
@@ -6883,7 +6803,6 @@ components:
           title: Combustible
       required:
       - capacity
-      - code
       - fuel_type
       - name
       - station

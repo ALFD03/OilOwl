@@ -1,16 +1,19 @@
 from rest_framework import serializers
 
-from apps.core.serializers import BASE_READ_ONLY, BaseModelSerializer
+from apps.core.serializers import AUTO_CODE_READ_ONLY, BASE_READ_ONLY, BaseModelSerializer, ImmutableOnUpdateMixin
 
 from .models import Delivery, Reconciliation, Tank, TankReading
 
 
-class TankSerializer(BaseModelSerializer):
+class TankSerializer(ImmutableOnUpdateMixin, BaseModelSerializer):
+    immutable_fields = ("station",)
     fuel_type_name = serializers.CharField(source="fuel_type.name", read_only=True)
     last_reading = serializers.SerializerMethodField()
 
-    class Meta(BaseModelSerializer.Meta):
+    class Meta:
         model = Tank
+        fields = "__all__"
+        read_only_fields = AUTO_CODE_READ_ONLY
 
     def get_last_reading(self, obj) -> dict | None:
         reading = obj.readings.order_by("-measured_at").first()
