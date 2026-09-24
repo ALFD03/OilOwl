@@ -1,0 +1,19 @@
+# Nunca enviar secretos ni respaldos al contexto de build.
+.env*
+!.env.example
+backups/
+.git/
+.github/
+.vercel/
+
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.ruff_cache/
+backend/.venv/
+backend/tests/
+
+frontend/node_modules/
+frontend/dist/
+
+deploy/.env

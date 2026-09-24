@@ -1,0 +1,53 @@
+# OilOwl en una VPS: Caddy (frontend + HTTPS) → Django (gunicorn) → Supabase Postgres.
+# Uso: cd deploy && cp .env.example .env && docker compose up -d --build   (ver deploy/README.md)
+name: oilowl
+
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: deploy/backend.Dockerfile
+    image: oilowl-backend
+    env_file: .env
+    restart: unless-stopped
+    expose: ["8000"]
+    healthcheck:
+      test: ["CMD", "entrypoint.sh", "healthcheck"]
+      interval: 60s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/web.Dockerfile
+    image: oilowl-web
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?Defina APP_DOMAIN en deploy/.env}
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  cron:
+    build: cron
+    image: oilowl-cron
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN}
+      CRON_SECRET: ${CRON_SECRET:?Defina CRON_SECRET en deploy/.env}
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+volumes:
+  # Certificados de Let's Encrypt: no borrar (hay límites de emisión).
+  caddy_data:
+  caddy_config:

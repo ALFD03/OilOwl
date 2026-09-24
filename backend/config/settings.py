@@ -68,9 +68,14 @@ TEMPLATES = []
 DATABASE_URL = env("DATABASE_URL") or env("POSTGRES_URL_NON_POOLING") or env("POSTGRES_URL")
 if not DATABASE_URL:
     DATABASE_URL = "postgres://postgres:postgres@localhost:54329/oilowl"
+# Serverless (Vercel): 0. Servidor persistente (VPS) con el pooler en modo sesión: p. ej. 60.
+DB_CONN_MAX_AGE = int(env("DB_CONN_MAX_AGE", "0"))
 DATABASES = {
     "default": dj_database_url.parse(
-        DATABASE_URL, conn_max_age=0, ssl_require=env_bool("DB_SSL", not DEBUG and not TESTING)
+        DATABASE_URL,
+        conn_max_age=DB_CONN_MAX_AGE,
+        conn_health_checks=DB_CONN_MAX_AGE > 0,
+        ssl_require=env_bool("DB_SSL", not DEBUG and not TESTING),
     )
 }
 DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
