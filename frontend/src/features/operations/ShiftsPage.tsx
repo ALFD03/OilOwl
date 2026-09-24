@@ -82,15 +82,19 @@ export function ShiftsPage() {
             </Field>
           </div>
           {canOverride && (
-            <Field label="Tasa manual (opcional)" hint="Déjela vacía para usar la tasa oficial vigente.">
-              <input className="input" type="number" step="any" value={form.rate} onChange={(e) => setForm({ ...form, rate: e.target.value })} />
+            <Field
+              label="Tasa manual (opcional)"
+              hint="Déjela vacía para usar la tasa oficial vigente."
+              error={form.rate !== '' && !(Number(form.rate) > 0) ? 'La tasa debe ser mayor que cero' : undefined}
+            >
+              <input className="input" type="number" min="0.000001" step="any" placeholder={latest ? rate(latest.rate) : ''} value={form.rate} onChange={(e) => setForm({ ...form, rate: e.target.value })} />
             </Field>
           )}
           <Field label="Observaciones"><input className="input" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></Field>
           <ErrorAlert error={create.error} />
           <div className="flex justify-end gap-2">
             <button className="btn-secondary" onClick={() => setOpen(false)}>Cancelar</button>
-            <button className="btn-primary" disabled={create.isPending} onClick={submit}>Abrir</button>
+            <button className="btn-primary" disabled={create.isPending || (form.rate !== '' && !(Number(form.rate) > 0))} onClick={submit}>Abrir</button>
           </div>
         </div>
       </Modal>

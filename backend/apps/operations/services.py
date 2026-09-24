@@ -4,6 +4,7 @@ from apps.audit import services as audit
 from apps.core import hashing
 from apps.core.exceptions import BusinessRuleError, InvalidStateError
 from apps.core.models import LockStatus
+from apps.core.money import MIN_RATE
 from apps.rates.models import ExchangeRate
 
 from .models import Shift
@@ -13,13 +14,44 @@ def resolve_rate(date, manual_rate, user):
     """La tasa de la jornada es la del BCV vigente; una tasa manual exige permiso explícito."""
     reference = ExchangeRate.objects.current(date)
     if manual_rate is not None:
+        if manual_rate < MIN_RATE:
+            raise BusinessRuleError("La tasa debe ser mayor que cero.")
         if reference is None or manual_rate != reference.rate:
             if not user.has_perm("rates.override_rate"):
                 raise BusinessRuleError("No tiene permiso para usar una tasa distinta a la oficial.")
         return manual_rate, reference
-    if reference is None:
-        raise BusinessRuleError("No hay tasa BCV registrada. Consulte el BCV o registre la tasa manualmente.")
+    if reference is None or reference.rate < MIN_RATE:
+        raise BusinessRuleError("No hay tasa BCV válida registrada. Consulte el BCV o registre la tasa manualmente.")
     return reference.rate, reference
+
+
+@transaction.atomic
+def set_shift_rate(shift: Shift, manual_rate, user) -> Shift:
+    """Corrige la tasa de una jornada abierta y recalcula sus cierres en borrador.
+
+    Solo se permite mientras todos los cierres estén en borrador: un cierre enviado o
+    bloqueado ya fue validado con la tasa anterior.
+    """
+    from apps.closures.services import recalculate
+
+    shift = Shift.objects.select_for_update().get(pk=shift.pk)
+    if shift.status != LockStatus.DRAFT:
+        raise InvalidStateError("La jornada ya está cerrada.")
+    not_draft = shift.closures.exclude(status=LockStatus.DRAFT).count()
+    if not_draft:
+        raise BusinessRuleError(
+            f"Hay {not_draft} cierre(s) enviados o bloqueados con la tasa actual. Devuelva los enviados a borrador para cambiarla."
+        )
+    rate, reference = resolve_rate(shift.date, manual_rate, user)
+    before = audit.snapshot(shift)
+    shift.rate = rate
+    shift.exchange_rate = reference
+    shift.save(update_fields=["rate", "exchange_rate", "updated_at", "updated_by"])
+    for closure in shift.closures.all():
+        closure.rate = rate
+        recalculate(closure)
+    audit.record("set_rate", shift, before=before, after=audit.snapshot(shift))
+    return shift
 
 
 def shift_snapshot(shift: Shift) -> dict:

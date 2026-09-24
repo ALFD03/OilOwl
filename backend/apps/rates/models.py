@@ -3,7 +3,7 @@ from django.db import models
 from django.utils import timezone
 
 from apps.core.models import BaseModel
-from apps.core.money import RATE_FIELD
+from apps.core.money import MIN_RATE, RATE_FIELD
 
 
 class ExchangeRateQuerySet(models.QuerySet):
@@ -21,7 +21,7 @@ class ExchangeRate(BaseModel):
         MANUAL = "MANUAL", "Manual"
 
     valid_date = models.DateField("fecha valor", db_index=True)
-    rate = models.DecimalField("Bs por USD", validators=[MinValueValidator(0)], **RATE_FIELD)
+    rate = models.DecimalField("Bs por USD", validators=[MinValueValidator(MIN_RATE)], **RATE_FIELD)
     source = models.CharField(max_length=8, choices=Source.choices, default=Source.BCV)
     notes = models.CharField(max_length=255, blank=True)
 

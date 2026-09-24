@@ -18,9 +18,11 @@ import { Field } from '../../components/ui/Field'
 import { ConfirmModal, Modal } from '../../components/ui/Modal'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { Spinner } from '../../components/ui/Spinner'
-import { readingAmounts, readingLiters, summarize, type Currency } from '../../lib/closureMath'
+import { readingAmounts, readingLiters, summarize, toUsd, toVes, type Currency } from '../../lib/closureMath'
 import { cn } from '../../lib/cn'
 import { date, dateTime, liters, money, rate, signedLiters, signedMoney } from '../../lib/format'
+
+const METHOD_LABEL: Record<string, string> = { CASH_USD: 'Efectivo $', CASH_VES: 'Efectivo Bs', POS: 'Punto de venta', BIOPAGO: 'BioPago' }
 
 interface Draft {
   readings: Record<string, { initial: string; final: string }>
@@ -125,6 +127,27 @@ export function ClosurePage() {
     return summarize(readings, lines, rateValue)
   }, [draft, closure, payload, denoms.data, terms.data])
 
+  const methodRows = useMemo(() => {
+    if (!closure) return []
+    const rateValue = Number(closure.rate)
+    if (!editable) {
+      return closure.method_totals.map((m) => ({ method: m.method, currency: m.currency as Currency, amount: Number(m.amount), usd: Number(m.amount_usd), ves: Number(m.amount_ves) }))
+    }
+    const totals = new Map<string, { method: string; currency: Currency; amount: number; usd: number; ves: number }>()
+    payload?.lines.forEach((l) => {
+      const d = l.denomination ? denoms.data?.find((x) => x.id === l.denomination) : undefined
+      const t = l.terminal ? terms.data?.find((x) => x.id === l.terminal) : undefined
+      const currency = (d?.currency ?? t?.currency ?? 'VES') as Currency
+      const amount = d ? Number(d.value) * Number(l.quantity) : Number(l.amount)
+      const row = totals.get(String(l.method)) ?? { method: String(l.method), currency, amount: 0, usd: 0, ves: 0 }
+      row.amount += amount
+      row.usd += toUsd(amount, currency, rateValue)
+      row.ves += toVes(amount, currency, rateValue)
+      totals.set(row.method, row)
+    })
+    return [...totals.values()]
+  }, [closure, editable, payload, denoms.data, terms.data])
+
   if (query.isLoading || !closure || !draft) return query.error ? <ErrorAlert error={query.error} /> : <Spinner full />
 
   // En borrador se muestra la vista previa; enviado o bloqueado, las cifras oficiales del servidor.
@@ -195,6 +218,12 @@ export function ClosurePage() {
           </div>
         </Alert>
       )}
+      {!(Number(closure.rate) > 0) && (
+        <Alert tone="error">
+          La jornada tiene una tasa de cambio inválida ({rate(closure.rate)}), por lo que los pagos en bolívares no se pueden convertir a dólares.{' '}
+          <Link to={`/jornadas/${closure.shift}`} className="font-medium underline">Corríjala con «Cambiar tasa» en la jornada</Link>.
+        </Alert>
+      )}
       <ErrorAlert error={actionError} />
       {save.isSuccess && editable && !save.isPending && <Alert tone="success">Borrador guardado.</Alert>}
 
@@ -250,16 +279,16 @@ export function ClosurePage() {
 
       {/* Arqueo */}
       <section className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <DenominationCounter title="Efectivo en bolívares" denominations={vesDenoms} counts={draft.cash} disabled={!editable} onChange={(cash) => setDraft({ ...draft, cash })} />
+        <DenominationCounter title="Efectivo en bolívares" rate={Number(closure.rate)} denominations={vesDenoms} counts={draft.cash} disabled={!editable} onChange={(cash) => setDraft({ ...draft, cash })} />
         <DenominationCounter title="Efectivo en dólares" denominations={usdDenoms} counts={draft.cash} disabled={!editable} onChange={(cash) => setDraft({ ...draft, cash })} />
-        <TerminalAmountList title="Puntos de venta" terminals={posTerms} entries={draft.pos} disabled={!editable} onChange={(pos) => setDraft({ ...draft, pos })} />
-        <TerminalAmountList title="BioPago" terminals={bioTerms} entries={draft.bio} disabled={!editable} onChange={(bio) => setDraft({ ...draft, bio })} />
+        <TerminalAmountList title="Puntos de venta" rate={Number(closure.rate)} terminals={posTerms} entries={draft.pos} disabled={!editable} onChange={(pos) => setDraft({ ...draft, pos })} />
+        <TerminalAmountList title="BioPago" rate={Number(closure.rate)} terminals={bioTerms} entries={draft.bio} disabled={!editable} onChange={(bio) => setDraft({ ...draft, bio })} />
       </section>
 
       {/* Resumen */}
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-[2fr_1fr]">
         <div className="card animate-fade-up overflow-hidden">
-          <h2 className="border-base flex items-center justify-between border-b px-4 py-3 text-sm font-semibold">
+          <h2 className="border-base flex items-center justify-between border-b px-5 py-3.5 text-sm font-semibold">
             Cuadre {editable && <span className="text-muted text-xs font-normal">Vista previa · se recalcula en el servidor al guardar</span>}
           </h2>
           <table className="table-base">
@@ -267,6 +296,17 @@ export function ClosurePage() {
             <tbody>
               <SummaryRow label="Venta según lecturas" usd={money(s.expectedUsd)} ves={money(s.expectedVes, 'VES')} lit={liters(s.expectedLiters)} />
               <SummaryRow label="Declarado en caja" usd={money(s.declaredUsd)} ves={money(s.declaredVes, 'VES')} />
+              {methodRows.map((m) => (
+                <tr key={m.method} className="text-muted text-xs">
+                  <td className="pl-8">
+                    {METHOD_LABEL[m.method] ?? m.method}
+                    <span className="ml-1.5 opacity-70">({money(m.amount, m.currency)}{m.currency === 'VES' ? ' → al cambio' : ''})</span>
+                  </td>
+                  <td className="num">{money(m.usd)}</td>
+                  <td className="num">{money(m.ves, 'VES')}</td>
+                  <td />
+                </tr>
+              ))}
               <SummaryRow
                 label={s.result === 'OVER' ? 'Sobrante' : s.result === 'SHORT' ? 'Faltante' : 'Cuadrado'}
                 usd={signedMoney(s.diffUsd)} ves={signedMoney(s.diffVes, 'VES')} lit={signedLiters(s.diffLiters)} strong tone={diffTone}

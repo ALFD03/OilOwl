@@ -1,7 +1,8 @@
+from django.core.validators import MinValueValidator
 from django.db import models
 
 from apps.core.models import LockableModel
-from apps.core.money import RATE_FIELD
+from apps.core.money import MIN_RATE, RATE_FIELD
 
 
 class Shift(LockableModel):
@@ -19,7 +20,7 @@ class Shift(LockableModel):
         related_name="shifts",
         verbose_name="turno",
     )
-    rate = models.DecimalField("tasa Bs/USD", **RATE_FIELD)
+    rate = models.DecimalField("tasa Bs/USD", validators=[MinValueValidator(MIN_RATE)], **RATE_FIELD)
     exchange_rate = models.ForeignKey(
         "rates.ExchangeRate",
         null=True,

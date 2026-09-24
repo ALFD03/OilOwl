@@ -14,6 +14,10 @@ PERCENT_FIELD = {"max_digits": 6, "decimal_places": 3}
 
 ZERO = Decimal("0")
 
+# Una tasa o un precio de cero anularía silenciosamente las conversiones Bs ↔ $.
+MIN_RATE = Decimal("0.000001")
+MIN_PRICE = Decimal("0.0001")
+
 
 def to_decimal(value) -> Decimal:
     if isinstance(value, Decimal):

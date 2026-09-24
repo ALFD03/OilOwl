@@ -17,6 +17,7 @@ from apps.core.choices import Currency
 from apps.core.exceptions import BusinessRuleError, InvalidStateError
 from apps.core.models import LockStatus
 from apps.core.money import (
+    MIN_RATE,
     ZERO,
     liters_from_usd,
     meter_delta,
@@ -186,7 +187,16 @@ def save_draft(closure: Closure, *, readings=None, lines=None, attendant=..., no
     return closure
 
 
+def ensure_valid_rate(closure: Closure) -> None:
+    """Sin tasa válida los pagos en Bs no se podrían convertir a $: nunca se calcula con cero."""
+    if to_decimal(closure.rate) < MIN_RATE:
+        raise BusinessRuleError(
+            "La jornada tiene una tasa de cambio inválida. Corríjala con «Cambiar tasa» en la jornada."
+        )
+
+
 def recalculate(closure: Closure) -> Closure:
+    ensure_valid_rate(closure)
     readings = list(closure.readings.select_related("pump"))
     for reading in readings:
         compute_reading(reading, closure.rate, reading.pump.meter_max)

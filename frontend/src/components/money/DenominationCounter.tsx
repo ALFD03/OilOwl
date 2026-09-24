@@ -4,9 +4,11 @@ import { money } from '../../lib/format'
 import { round2 } from '../../lib/closureMath'
 
 export function DenominationCounter({
-  title, denominations, counts, onChange, disabled,
+  title, denominations, counts, onChange, disabled, rate,
 }: {
   title: string
+  /** Tasa Bs/$ de la jornada: muestra el equivalente en $ de los bolívares. */
+  rate?: number
   denominations: Denomination[]
   counts: Record<string, number>
   onChange: (counts: Record<string, number>) => void
@@ -18,7 +20,12 @@ export function DenominationCounter({
     <div className="card card-interactive animate-fade-up p-5">
       <div className="mb-3 flex items-baseline justify-between">
         <h3 className="flex items-center gap-2 text-sm font-semibold"><span className="size-1.5 rounded-full bg-brand-500 shadow-[0_0_8px_rgb(197_160_89/0.9)]" />{title}</h3>
-        <span className="text-gold text-base font-semibold tabular-nums" data-testid="denomination-total">{money(total, currency)}</span>
+        <span className="text-right">
+          <span className="text-gold block text-base font-semibold tabular-nums" data-testid="denomination-total">{money(total, currency)}</span>
+          {currency === 'VES' && rate ? (
+            <span className="text-muted block text-xs tabular-nums" data-testid="denomination-usd">≈ {money(round2(total / rate))} al cambio</span>
+          ) : null}
+        </span>
       </div>
       <div className="space-y-1.5">
         {denominations.map((d) => {

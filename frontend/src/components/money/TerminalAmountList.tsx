@@ -9,9 +9,11 @@ export interface TerminalEntry {
 }
 
 export function TerminalAmountList({
-  title, terminals, entries, onChange, disabled,
+  title, terminals, entries, onChange, disabled, rate,
 }: {
   title: string
+  /** Tasa Bs/$ de la jornada: muestra el equivalente en $ de los bolívares. */
+  rate?: number
   terminals: PaymentTerminal[]
   entries: Record<string, TerminalEntry>
   onChange: (entries: Record<string, TerminalEntry>) => void
@@ -25,8 +27,11 @@ export function TerminalAmountList({
     <div className="card card-interactive animate-fade-up p-5">
       <div className="mb-3 flex items-baseline justify-between">
         <h3 className="flex items-center gap-2 text-sm font-semibold"><span className="size-1.5 rounded-full bg-brand-500 shadow-[0_0_8px_rgb(197_160_89/0.9)]" />{title}</h3>
-        <span className="text-gold text-base font-semibold tabular-nums">
-          {Object.entries(totals).map(([c, v]) => money(v, c as 'USD' | 'VES')).join(' + ') || money(0, 'VES')}
+        <span className="text-right">
+          <span className="text-gold block text-base font-semibold tabular-nums">
+            {Object.entries(totals).map(([c, v]) => money(v, c as 'USD' | 'VES')).join(' + ') || money(0, 'VES')}
+          </span>
+          {rate && totals.VES ? <span className="text-muted block text-xs tabular-nums">≈ {money(round2(totals.VES / rate))} al cambio</span> : null}
         </span>
       </div>
       <div className="space-y-2">

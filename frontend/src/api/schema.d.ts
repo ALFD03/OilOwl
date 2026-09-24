@@ -948,6 +948,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/shifts/{id}/set-rate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description CRUD completo estándar. Los catálogos se desactivan en lugar de borrarse. */
+        post: operations["shifts_set_rate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/stations": {
         parameters: {
             query?: never;
@@ -2161,7 +2178,7 @@ export interface components {
         /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
         PatchedShiftRequest: {
             /** Format: decimal */
-            rate?: string;
+            rate?: string | null;
             /**
              * Fecha
              * Format: date
@@ -2507,12 +2524,17 @@ export interface components {
             /** @default true */
             must_change_password: boolean;
         };
+        /** @description Sin `rate` se aplica la tasa BCV vigente para la fecha de la jornada. */
+        SetRateRequest: {
+            /** Format: decimal */
+            rate?: string | null;
+        };
         /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
         Shift: {
             /** Format: uuid */
             readonly id: string;
             /** Format: decimal */
-            rate?: string;
+            rate?: string | null;
             readonly closures_total: number;
             readonly shift_name: string;
             /** Format: date-time */
@@ -2554,7 +2576,7 @@ export interface components {
         /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
         ShiftRequest: {
             /** Format: decimal */
-            rate?: string;
+            rate?: string | null;
             /**
              * Fecha
              * Format: date
@@ -5209,6 +5231,32 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Shift"];
+                };
+            };
+        };
+    };
+    shifts_set_rate_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este shift. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SetRateRequest"];
+            };
+        };
         responses: {
             200: {
                 headers: {

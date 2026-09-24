@@ -1,11 +1,12 @@
-import { DollarSign, Fuel, Lock, PlayCircle, Scale } from 'lucide-react'
+import { DollarSign, Fuel, Lock, PlayCircle, RefreshCw, Scale } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
-import { assignments, attendants, closures, islands, pumps, shifts } from '../../api/resources'
+import { assignments, attendants, closures, exchangeRates, islands, pumps, shifts } from '../../api/resources'
 import type { ClosureListItem, Island, Shift } from '../../api/types'
+import { usePermission } from '../../auth/AuthContext'
 import { Can } from '../../auth/Can'
-import { ErrorAlert } from '../../components/ui/Alert'
+import { Alert, ErrorAlert } from '../../components/ui/Alert'
 import { StatusBadge } from '../../components/ui/Badge'
 import { Field } from '../../components/ui/Field'
 import { ConfirmModal, Modal } from '../../components/ui/Modal'
@@ -67,6 +68,44 @@ function OpenIslandModal({ shift, island, onClose }: { shift: Shift; island: Isl
   )
 }
 
+/** Corrige la tasa de una jornada abierta: BCV vigente o tasa manual (con permiso). */
+function SetRateModal({ shift, onClose }: { shift: Shift; onClose: () => void }) {
+  const canOverride = usePermission('rates.override_rate')
+  const current = exchangeRates.useList({ page_size: 1 })
+  const setRate = shifts.useAction<{ rate?: string }>('set-rate')
+  const [manual, setManual] = useState('')
+  const latest = current.data?.results[0]
+  const invalidManual = manual !== '' && !(Number(manual) > 0)
+
+  const apply = (body: { rate?: string }) =>
+    setRate.mutateAsync({ id: shift.id, body }).then(onClose).catch(() => undefined)
+
+  return (
+    <Modal open title="Cambiar tasa de la jornada" onClose={onClose}>
+      <div className="space-y-4 text-sm">
+        <p className="text-soft">
+          Tasa actual: <strong>{rate(shift.rate)} Bs/$</strong>. Los cierres de esta jornada (todos deben estar en borrador) se recalculan con la nueva tasa.
+        </p>
+        {latest && (
+          <button className="btn-secondary w-full justify-between" disabled={setRate.isPending} onClick={() => apply({})}>
+            <span>Usar la tasa BCV vigente</span>
+            <strong className="text-gold">{rate(latest.rate)} Bs/$ · {date(latest.valid_date)}</strong>
+          </button>
+        )}
+        {canOverride && (
+          <Field label="O tasa manual (Bs por $)" error={invalidManual ? 'La tasa debe ser mayor que cero' : undefined}>
+            <div className="flex gap-2">
+              <input className="input" type="number" min="0.000001" step="any" value={manual} onChange={(e) => setManual(e.target.value)} />
+              <button className="btn-primary" disabled={!manual || invalidManual || setRate.isPending} onClick={() => apply({ rate: manual })}>Aplicar</button>
+            </div>
+          </Field>
+        )}
+        <ErrorAlert error={setRate.error} />
+      </div>
+    </Modal>
+  )
+}
+
 export function ShiftDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -76,6 +115,7 @@ export function ShiftDetailPage() {
   const close = shifts.useAction('close')
   const [opening, setOpening] = useState<Island | null>(null)
   const [confirmClose, setConfirmClose] = useState(false)
+  const [changingRate, setChangingRate] = useState(false)
 
   if (shift.isLoading || !shift.data) return shift.error ? <ErrorAlert error={shift.error} /> : <Spinner full />
   const s = shift.data
@@ -94,14 +134,26 @@ export function ShiftDetailPage() {
         description={<>Tasa congelada: <strong>{rate(s.rate)} Bs/$</strong> · <StatusBadge value={s.status} /></>}
         actions={
           s.status === 'DRAFT' && (
+            <>
+            <Can perm="operations.change_shift">
+              <button className="btn-secondary" onClick={() => setChangingRate(true)}>
+                <RefreshCw className="size-4" /> Cambiar tasa
+              </button>
+            </Can>
             <Can perm="operations.close_shift">
               <button className="btn-primary" disabled={!allLocked} title={allLocked ? '' : 'Todas las islas abiertas deben estar bloqueadas'} onClick={() => { close.reset(); setConfirmClose(true) }}>
                 <Lock className="size-4" /> Cerrar jornada
               </button>
             </Can>
+            </>
           )
         }
       />
+      {!(Number(s.rate) > 0) && (
+        <div className="mb-4">
+          <Alert tone="error">La tasa de esta jornada es inválida ({rate(s.rate)}): los pagos en bolívares no se pueden convertir. Use «Cambiar tasa».</Alert>
+        </div>
+      )}
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard icon={Fuel} label="Litros" value={liters(totals.liters)} />
         <StatCard icon={DollarSign} label="Ventas" value={money(totals.usd)} />
@@ -137,6 +189,7 @@ export function ShiftDetailPage() {
           )
         })}
       </div>
+      {changingRate && <SetRateModal shift={s} onClose={() => setChangingRate(false)} />}
       {opening && <OpenIslandModal shift={s} island={opening} onClose={() => setOpening(null)} />}
       <ConfirmModal
         open={confirmClose}

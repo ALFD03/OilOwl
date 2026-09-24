@@ -2715,6 +2715,35 @@ paths:
               schema:
                 $ref: '#/components/schemas/Shift'
           description: ''
+  /api/shifts/{id}/set-rate:
+    post:
+      operationId: shifts_set_rate_create
+      description: CRUD completo estándar. Los catálogos se desactivan en lugar de
+        borrarse.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un Cadena UUID que identifique este shift.
+        required: true
+      tags:
+      - shifts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetRateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shift'
+          description: ''
   /api/stations:
     get:
       operationId: stations_list
@@ -5651,6 +5680,7 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,6})?$
+          nullable: true
         date:
           type: string
           format: date
@@ -6305,6 +6335,15 @@ components:
           default: true
       required:
       - new_password
+    SetRateRequest:
+      type: object
+      description: Sin `rate` se aplica la tasa BCV vigente para la fecha de la jornada.
+      properties:
+        rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,6})?$
+          nullable: true
     Shift:
       type: object
       description: 'Serializer estándar: los campos de auditoría siempre son de solo
@@ -6318,6 +6357,7 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,6})?$
+          nullable: true
         closures_total:
           type: integer
           readOnly: true
@@ -6408,6 +6448,7 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,6})?$
+          nullable: true
         date:
           type: string
           format: date

@@ -15,7 +15,15 @@ function Harness() {
   return <DenominationCounter title="Efectivo $" denominations={denoms} counts={counts} onChange={setCounts} />
 }
 
+const ves = [{ id: 'b100', currency: 'VES', value: '100.00', kind: 'BILL' }] as Denomination[]
+
 describe('DenominationCounter', () => {
+  it('muestra el equivalente en dólares de los bolívares a la tasa de la jornada', () => {
+    render(<DenominationCounter title="Efectivo Bs" denominations={ves} counts={{ b100: 17 }} onChange={() => undefined} rate={850} />)
+    expect(screen.getByTestId('denomination-total')).toHaveTextContent('Bs 1.700,00')
+    expect(screen.getByTestId('denomination-usd')).toHaveTextContent('≈ $ 2,00 al cambio')
+  })
+
   it('multiplica cantidad por denominación y totaliza', () => {
     render(<Harness />)
     fireEvent.change(screen.getByLabelText('Cantidad de 20.00 USD'), { target: { value: '2' } })

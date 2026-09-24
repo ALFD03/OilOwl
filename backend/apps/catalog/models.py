@@ -5,7 +5,7 @@ from django.utils import timezone
 from apps.core.choices import Currency
 from apps.core.crypto import EncryptedTextField, blind_index
 from apps.core.models import BaseModel, CatalogModel, StationCatalogModel, StationScopedModel
-from apps.core.money import LITERS_FIELD, PRICE_FIELD
+from apps.core.money import LITERS_FIELD, MIN_PRICE, PRICE_FIELD
 
 
 class Station(CatalogModel):
@@ -69,7 +69,7 @@ class FuelPrice(StationScopedModel):
     """Precio histórico por estación y combustible. Nunca se edita: se registra uno nuevo."""
 
     fuel_type = models.ForeignKey(FuelType, on_delete=models.PROTECT, related_name="prices", verbose_name="combustible")
-    price = models.DecimalField("precio por litro", validators=[MinValueValidator(0)], **PRICE_FIELD)
+    price = models.DecimalField("precio por litro", validators=[MinValueValidator(MIN_PRICE)], **PRICE_FIELD)
     currency = models.CharField("moneda", max_length=3, choices=Currency.choices, default=Currency.USD)
     valid_from = models.DateTimeField("vigente desde", default=timezone.now)
 
