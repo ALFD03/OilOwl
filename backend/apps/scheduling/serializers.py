@@ -1,14 +1,18 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
-from apps.core.serializers import BaseModelSerializer
+from apps.core.serializers import AUTO_CODE_READ_ONLY, BaseModelSerializer, ImmutableOnUpdateMixin
 
 from .models import Assignment, ShiftTemplate
 
 
-class ShiftTemplateSerializer(BaseModelSerializer):
-    class Meta(BaseModelSerializer.Meta):
+class ShiftTemplateSerializer(ImmutableOnUpdateMixin, BaseModelSerializer):
+    immutable_fields = ("station",)
+
+    class Meta:
         model = ShiftTemplate
+        fields = "__all__"
+        read_only_fields = AUTO_CODE_READ_ONLY
 
 
 class AssignmentSerializer(BaseModelSerializer):

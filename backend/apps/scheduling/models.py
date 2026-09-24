@@ -1,10 +1,11 @@
 from django.core.exceptions import ValidationError
 from django.db import models
 
+from apps.core import codes
 from apps.core.models import BaseModel, StationCatalogModel
 
 
-class ShiftTemplate(StationCatalogModel):
+class ShiftTemplate(codes.AutoCodeMixin, StationCatalogModel):
     """Turno de trabajo (p. ej. Mañana 06:00-14:00)."""
 
     start_time = models.TimeField("inicio")
@@ -12,6 +13,9 @@ class ShiftTemplate(StationCatalogModel):
 
     class Meta(StationCatalogModel.Meta):
         constraints = [models.UniqueConstraint(fields=["station", "code"], name="uniq_shifttemplate_code")]
+
+    def code_prefix(self):
+        return codes.SHIFT_TEMPLATE
 
     @property
     def crosses_midnight(self) -> bool:

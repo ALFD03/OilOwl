@@ -83,6 +83,24 @@ DATABASE_URL="${DATABASE_URL/:6543/:5432}" .venv/bin/python manage.py migrate
 
 Flujo recomendado: se prueba en QA (preview de `develop`) y, una vez validado, se fusiona a `main`. Las migraciones se aplican en QA primero y luego en producción.
 
+## Nomenclatura de códigos
+
+Todo elemento de una estación lleva un código `ESTACIÓN-TIPO-####`, asignado automáticamente al crearlo y fijo desde entonces (`apps/core/codes.py`):
+
+| Tipo | Letras | Ejemplo |
+| --- | --- | --- |
+| Isla | `IS` | `PLN-IS-0001` |
+| Surtidor | `SU` | `PLN-SU-0001` |
+| Tanque | `TQ` | `PLN-TQ-0001` |
+| Punto de venta | `PV` | `PLN-PV-0001` |
+| BioPago | `BP` | `PLN-BP-0001` |
+| Bombero | `BO` | `PLN-BO-0001` |
+| Turno | `TU` | `PLN-TU-0001` |
+
+- El prefijo de estación son 3 letras (A-Z) en mayúsculas, definidas al crearla y no editables.
+- El número es correlativo por estación y tipo (`catalog.CodeSequence`, reservado con bloqueo de fila): nunca se reutiliza, ni al desactivar.
+- No se puede mover un elemento a otra estación ni cambiar el tipo de un terminal, porque cambiaría su código.
+
 ## Identidad visual
 
 Sistema **Night & Gold**: Azul Medianoche `#050A14` (fondo), Oro Bruñido `#C5A059` (marca y acentos), Gris Grafito `#808080` (texto secundario) y Blanco `#FFFFFF` (texto). Tipografías autoalojadas: **Bodoni Moda** para la marca y los titulares, **Inter** para la interfaz. Los tokens están en `frontend/src/index.css`; el modo oscuro es el predeterminado y el claro es opcional.

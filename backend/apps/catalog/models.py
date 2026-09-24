@@ -2,6 +2,7 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
 
+from apps.core import codes
 from apps.core.choices import Currency
 from apps.core.crypto import EncryptedTextField, blind_index
 from apps.core.models import BaseModel, CatalogModel, StationCatalogModel, StationScopedModel
@@ -9,14 +10,31 @@ from apps.core.money import LITERS_FIELD, MIN_PRICE, PRICE_FIELD
 
 
 class Station(CatalogModel):
-    """Estación de servicio."""
+    """Estación de servicio. Su código (3 letras) es el prefijo de todos sus elementos."""
 
+    code = models.CharField("prefijo", max_length=3, validators=[codes.validate_station_code])
     rif = models.CharField("RIF", max_length=20, blank=True)
     address = models.CharField("dirección", max_length=255, blank=True)
     phone = models.CharField("teléfono", max_length=30, blank=True)
 
     class Meta(CatalogModel.Meta):
         constraints = [models.UniqueConstraint(fields=["code"], name="uniq_station_code")]
+
+    def save(self, *args, **kwargs):
+        self.code = codes.normalize_station_code(self.code)
+        super().save(*args, **kwargs)
+
+
+class CodeSequence(models.Model):
+    """Último número asignado por estación y tipo de elemento (nunca retrocede)."""
+
+    station = models.ForeignKey(Station, on_delete=models.CASCADE, related_name="code_sequences")
+    prefix = models.CharField(max_length=2)
+    last = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["station", "prefix"], name="uniq_code_sequence")]
+        default_permissions = ()
 
 
 class FuelType(CatalogModel):
@@ -28,14 +46,17 @@ class FuelType(CatalogModel):
         constraints = [models.UniqueConstraint(fields=["code"], name="uniq_fueltype_code")]
 
 
-class Island(StationCatalogModel):
+class Island(codes.AutoCodeMixin, StationCatalogModel):
     """Isla de despacho."""
+
+    def code_prefix(self):
+        return codes.ISLAND
 
     class Meta(StationCatalogModel.Meta):
         constraints = [models.UniqueConstraint(fields=["station", "code"], name="uniq_island_code")]
 
 
-class Pump(CatalogModel):
+class Pump(codes.AutoCodeMixin, CatalogModel):
     """Surtidor/manguera con su totalizador de litros."""
 
     island = models.ForeignKey(Island, on_delete=models.PROTECT, related_name="pumps", verbose_name="isla")
@@ -52,6 +73,12 @@ class Pump(CatalogModel):
 
     @property
     def station_id(self):
+        return self.island.station_id
+
+    def code_prefix(self):
+        return codes.PUMP
+
+    def code_station_id(self):
         return self.island.station_id
 
 
@@ -106,7 +133,7 @@ class Denomination(BaseModel):
         return f"{self.value} {self.currency}"
 
 
-class PaymentTerminal(StationCatalogModel):
+class PaymentTerminal(codes.AutoCodeMixin, StationCatalogModel):
     """Punto de venta bancario o dispositivo BioPago."""
 
     class Kind(models.TextChoices):
@@ -121,8 +148,11 @@ class PaymentTerminal(StationCatalogModel):
     class Meta(StationCatalogModel.Meta):
         constraints = [models.UniqueConstraint(fields=["station", "code"], name="uniq_terminal_code")]
 
+    def code_prefix(self):
+        return codes.BIOPAGO if self.kind == self.Kind.BIOPAGO else codes.POS
 
-class Attendant(StationCatalogModel):
+
+class Attendant(codes.AutoCodeMixin, StationCatalogModel):
     """Bombero. Sus datos personales se guardan cifrados."""
 
     national_id = EncryptedTextField("cédula", blank=True)
@@ -131,6 +161,9 @@ class Attendant(StationCatalogModel):
 
     class Meta(StationCatalogModel.Meta):
         constraints = [models.UniqueConstraint(fields=["station", "code"], name="uniq_attendant_code")]
+
+    def code_prefix(self):
+        return codes.ATTENDANT
 
     def save(self, *args, **kwargs):
         self.national_id_index = blind_index(self.national_id) if self.national_id else ""

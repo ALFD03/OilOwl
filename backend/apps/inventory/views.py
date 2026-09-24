@@ -20,6 +20,7 @@ from .serializers import (
 class TankViewSet(BaseModelViewSet):
     queryset = Tank.objects.select_related("fuel_type")
     serializer_class = TankSerializer
+    ordering = ["code"]  # ESTACIÓN-TIPO-#### en orden correlativo
     station_field = "station"
     filterset_fields = ["is_active", "fuel_type"]
     search_fields = ["code", "name"]

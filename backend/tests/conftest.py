@@ -45,12 +45,12 @@ def grant(user, *codes):
 
 @pytest.fixture
 def station(db):
-    return Station.objects.create(code="E1", name="Estación Uno")
+    return Station.objects.create(code="EUN", name="Estación Uno")
 
 
 @pytest.fixture
 def other_station(db):
-    return Station.objects.create(code="E2", name="Estación Dos")
+    return Station.objects.create(code="EDO", name="Estación Dos")
 
 
 @pytest.fixture

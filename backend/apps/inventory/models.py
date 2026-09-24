@@ -2,12 +2,13 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
 
+from apps.core import codes
 from apps.core.exceptions import ImmutableRecordError
 from apps.core.models import StationCatalogModel, StationScopedModel
 from apps.core.money import LITERS_FIELD, MONEY_FIELD, PERCENT_FIELD, PRICE_FIELD, RATE_FIELD
 
 
-class Tank(StationCatalogModel):
+class Tank(codes.AutoCodeMixin, StationCatalogModel):
     """Tanque de almacenamiento con su tolerancia de diferencia aceptable."""
 
     fuel_type = models.ForeignKey(
@@ -20,6 +21,9 @@ class Tank(StationCatalogModel):
 
     class Meta(StationCatalogModel.Meta):
         constraints = [models.UniqueConstraint(fields=["station", "code"], name="uniq_tank_code")]
+
+    def code_prefix(self):
+        return codes.TANK
 
 
 class AppendOnlyModel(StationScopedModel):

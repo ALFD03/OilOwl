@@ -12,9 +12,12 @@ const codeName: FieldSpec[] = [
   { name: 'code', label: 'Código', required: true },
   { name: 'name', label: 'Nombre', required: true },
 ]
+/** Elementos con código automático ESTACIÓN-TIPO-####: solo se pide el nombre. */
+const nameOnly: FieldSpec[] = [{ name: 'name', label: 'Nombre', required: true, span: 2 }]
+const autoCodeNote = (example: string) => `El código se asigna automáticamente al guardar (p. ej. ${example}) y no cambia.`
 const activeField: FieldSpec = { name: 'is_active', label: 'Activo', type: 'checkbox', hideOnCreate: true }
 const baseColumns: Column<Row>[] = [
-  { key: 'code', label: 'Código' },
+  { key: 'code', label: 'Código', render: (r) => <span className="rounded-md bg-brand-500/10 px-2 py-0.5 font-mono text-xs font-medium text-gold ring-1 ring-brand-500/20">{String(r.code)}</span> },
   { key: 'name', label: 'Nombre' },
 ]
 const CURRENCIES = [{ value: 'USD', label: 'Dólares ($)' }, { value: 'VES', label: 'Bolívares (Bs)' }]
@@ -22,8 +25,14 @@ const CURRENCIES = [{ value: 'USD', label: 'Dólares ($)' }, { value: 'VES', lab
 export const StationsPage = () => (
   <CrudPage<Row>
     title="Estaciones" singular="estación" resource={stations} perm="catalog.station"
-    columns={[...baseColumns, { key: 'rif', label: 'RIF' }, { key: 'phone', label: 'Teléfono' }, activeColumn]}
-    fields={[...codeName, { name: 'rif', label: 'RIF' }, { name: 'phone', label: 'Teléfono' }, { name: 'address', label: 'Dirección', span: 2 }, activeField]}
+    columns={[{ ...baseColumns[0], label: 'Prefijo' }, baseColumns[1], { key: 'rif', label: 'RIF' }, { key: 'phone', label: 'Teléfono' }, activeColumn]}
+    description="El prefijo de 3 letras identifica a la estación en el código de todos sus elementos (PLN-SU-0001)."
+    fields={[
+      { name: 'code', label: 'Prefijo', required: true, readOnlyOnEdit: true, uppercase: true, maxLength: 3, pattern: '[A-Za-z]{3}', placeholder: 'PLN',
+        hint: '3 letras, sin números. No se puede cambiar después.' },
+      { name: 'name', label: 'Nombre', required: true },
+      { name: 'rif', label: 'RIF' }, { name: 'phone', label: 'Teléfono' }, { name: 'address', label: 'Dirección', span: 2 }, activeField,
+    ]}
   />
 )
 
@@ -39,18 +48,19 @@ export const FuelTypesPage = () => (
 export const IslandsPage = () => (
   <CrudPage<Row>
     title="Islas" singular="isla" resource={islands} perm="catalog.island" stationScoped
-    columns={[...baseColumns, activeColumn]} fields={[...codeName, activeField]}
+    description={autoCodeNote('PLN-IS-0001')}
+    columns={[...baseColumns, activeColumn]} fields={[...nameOnly, activeField]}
   />
 )
 
 export const PumpsPage = () => (
   <CrudPage<Row>
-    title="Surtidores" description="Cada surtidor (manguera) tiene su totalizador de litros, su combustible y el tanque del que despacha."
+    title="Surtidores" description={`Cada surtidor (manguera) tiene su totalizador de litros, su combustible y su tanque. ${autoCodeNote('PLN-SU-0001')}`}
     singular="surtidor" resource={pumps} perm="catalog.pump" stationScoped
     columns={[...baseColumns, { key: 'fuel_type_name', label: 'Combustible' }, { key: 'meter_max', label: 'Tope totalizador', numeric: true, render: (r) => (r.meter_max ? liters(r.meter_max) : '—') }, activeColumn]}
     fields={[
-      ...codeName,
-      { name: 'island', label: 'Isla', type: 'relation', resource: islands, stationScoped: true, required: true },
+      ...nameOnly,
+      { name: 'island', label: 'Isla', type: 'relation', resource: islands, stationScoped: true, required: true, readOnlyOnEdit: true },
       { name: 'fuel_type', label: 'Combustible', type: 'relation', resource: fuelTypes, required: true },
       { name: 'tank', label: 'Tanque', type: 'relation', resource: tanks, stationScoped: true },
       { name: 'meter_max', label: 'Tope del totalizador (L)', type: 'decimal', hint: 'Valor en que el contador vuelve a cero.' },
@@ -61,7 +71,7 @@ export const PumpsPage = () => (
 
 export const TanksPage = () => (
   <CrudPage<Row>
-    title="Tanques" singular="tanque" resource={tanks} perm="inventory.tank" stationScoped
+    title="Tanques" description={autoCodeNote('PLN-TQ-0001')} singular="tanque" resource={tanks} perm="inventory.tank" stationScoped
     columns={[
       ...baseColumns, { key: 'fuel_type_name', label: 'Combustible' },
       { key: 'capacity', label: 'Capacidad', numeric: true, render: (r) => liters(r.capacity) },
@@ -70,7 +80,7 @@ export const TanksPage = () => (
       activeColumn,
     ]}
     fields={[
-      ...codeName,
+      ...nameOnly,
       { name: 'fuel_type', label: 'Combustible', type: 'relation', resource: fuelTypes, required: true },
       { name: 'capacity', label: 'Capacidad (L)', type: 'decimal', required: true },
       { name: 'tolerance_pct', label: 'Tolerancia de diferencia (%)', type: 'decimal', required: true, hint: 'Diferencia aceptable entre lo esperado y lo medido.' },
@@ -101,11 +111,11 @@ export const DenominationsPage = () => (
 
 export const TerminalsPage = () => (
   <CrudPage<Row>
-    title="Puntos de venta y BioPago" singular="terminal" resource={terminals} perm="catalog.paymentterminal" stationScoped
+    title="Puntos de venta y BioPago" description={autoCodeNote('PLN-PV-0001 o PLN-BP-0001')} singular="terminal" resource={terminals} perm="catalog.paymentterminal" stationScoped
     columns={[...baseColumns, { key: 'kind', label: 'Tipo', render: (r) => (r.kind === 'POS' ? 'Punto de venta' : 'BioPago') }, { key: 'bank', label: 'Banco' }, { key: 'serial', label: 'Serial' }, activeColumn]}
     fields={[
-      ...codeName,
-      { name: 'kind', label: 'Tipo', type: 'select', options: [{ value: 'POS', label: 'Punto de venta' }, { value: 'BIOPAGO', label: 'BioPago' }], required: true },
+      ...nameOnly,
+      { name: 'kind', label: 'Tipo', type: 'select', options: [{ value: 'POS', label: 'Punto de venta' }, { value: 'BIOPAGO', label: 'BioPago' }], required: true, readOnlyOnEdit: true, hint: 'Define el código: PV para punto de venta, BP para BioPago.' },
       { name: 'currency', label: 'Moneda', type: 'select', options: CURRENCIES, required: true },
       { name: 'bank', label: 'Banco' },
       { name: 'serial', label: 'Serial' },
@@ -117,17 +127,17 @@ export const TerminalsPage = () => (
 
 export const AttendantsPage = () => (
   <CrudPage<Row>
-    title="Bomberos" description="La cédula y el teléfono se almacenan cifrados." singular="bombero" resource={attendants} perm="catalog.attendant" stationScoped
+    title="Bomberos" description={`La cédula y el teléfono se almacenan cifrados. ${autoCodeNote('PLN-BO-0001')}`} singular="bombero" resource={attendants} perm="catalog.attendant" stationScoped
     columns={[...baseColumns, { key: 'national_id', label: 'Cédula' }, { key: 'phone', label: 'Teléfono' }, activeColumn]}
-    fields={[...codeName, { name: 'national_id', label: 'Cédula' }, { name: 'phone', label: 'Teléfono' }, activeField]}
+    fields={[...nameOnly, { name: 'national_id', label: 'Cédula' }, { name: 'phone', label: 'Teléfono' }, activeField]}
   />
 )
 
 export const ShiftTemplatesPage = () => (
   <CrudPage<Row>
-    title="Turnos" singular="turno" resource={shiftTemplates} perm="scheduling.shifttemplate" stationScoped
+    title="Turnos" description={autoCodeNote('PLN-TU-0001')} singular="turno" resource={shiftTemplates} perm="scheduling.shifttemplate" stationScoped
     columns={[...baseColumns, { key: 'start_time', label: 'Inicio' }, { key: 'end_time', label: 'Fin' }, activeColumn]}
-    fields={[...codeName, { name: 'start_time', label: 'Inicio', type: 'time', required: true }, { name: 'end_time', label: 'Fin', type: 'time', required: true }, activeField]}
+    fields={[...nameOnly, { name: 'start_time', label: 'Inicio', type: 'time', required: true }, { name: 'end_time', label: 'Fin', type: 'time', required: true }, activeField]}
   />
 )
 

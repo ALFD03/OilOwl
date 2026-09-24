@@ -7,6 +7,7 @@ from .serializers import AssignmentSerializer, ShiftTemplateSerializer
 class ShiftTemplateViewSet(BaseModelViewSet):
     queryset = ShiftTemplate.objects.all()
     serializer_class = ShiftTemplateSerializer
+    ordering = ["code"]  # ESTACIÓN-TIPO-#### en orden correlativo
     station_field = "station"
     filterset_fields = ["is_active"]
     search_fields = ["code", "name"]
