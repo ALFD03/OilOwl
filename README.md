@@ -28,6 +28,20 @@ Control de lecturas, cierres de caja por isla e inventario para estaciones de se
 
 ## Desarrollo local
 
+Con `make` (ejecute `make` solo para ver todas las tareas):
+
+```bash
+make install     # venv del backend + dependencias del frontend (una vez)
+make dev         # Postgres local + migraciones + API (:8017) + frontend (:5173), con recarga automática
+make seed        # catálogo y roles sugeridos (base nueva)
+make superuser
+make check       # lint + tipos + pruebas, lo mismo que el CI
+```
+
+`make dev` siempre usa la base local (`oilowl_pg`), aunque la terminal tenga exportado un `DATABASE_URL` de producción o QA. Los puertos se cambian con `make dev BACKEND_PORT=8000 FRONTEND_PORT=3000`.
+
+Paso a paso, sin `make`:
+
 ```bash
 # Postgres local
 docker run -d --name oilowl_pg -p 54329:5432 -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=oilowl postgres:17-alpine
