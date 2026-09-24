@@ -7,7 +7,7 @@ import { Can } from '../../auth/Can'
 import { DataTable } from '../../components/data/DataTable'
 import { ErrorAlert } from '../../components/ui/Alert'
 import { Field } from '../../components/ui/Field'
-import { ConfirmModal, Modal } from '../../components/ui/Modal'
+import { ConfirmModal, Modal, ModalActions } from '../../components/ui/Modal'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { PermissionPicker } from './PermissionPicker'
 
@@ -53,16 +53,16 @@ export function RolesPage() {
           </div>
         )}
       />
-      <Modal open={!!editing} title={editing?.id ? 'Editar rol' : 'Nuevo rol'} onClose={() => setEditing(null)} wide>
+      <Modal open={!!editing} title={editing?.id ? 'Editar rol' : 'Nuevo rol'} onClose={() => setEditing(null)}>
         {editing && (
           <div className="space-y-4">
             <Field label="Nombre *"><input className="input" value={editing.name ?? ''} onChange={(e) => setEditing({ ...editing, name: e.target.value })} /></Field>
             <PermissionPicker value={editing.permissions ?? []} onChange={(permissions) => setEditing({ ...editing, permissions })} />
             <ErrorAlert error={create.error ?? update.error} />
-            <div className="flex justify-end gap-2">
+            <ModalActions>
               <button className="btn-secondary" onClick={() => setEditing(null)}>Cancelar</button>
               <button className="btn-primary" disabled={!editing.name || create.isPending || update.isPending} onClick={save}>Guardar</button>
-            </div>
+            </ModalActions>
           </div>
         )}
       </Modal>

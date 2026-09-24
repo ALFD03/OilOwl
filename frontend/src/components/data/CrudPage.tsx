@@ -12,7 +12,7 @@ import { Can } from '../../auth/Can'
 import { usePermission } from '../../auth/AuthContext'
 import { useStation } from '../../lib/stationContext'
 import { ErrorAlert } from '../ui/Alert'
-import { ConfirmModal, Modal } from '../ui/Modal'
+import { ConfirmModal, Modal, ModalActions } from '../ui/Modal'
 import { PageHeader } from '../ui/PageHeader'
 import { DataTable, Pagination, type Column } from './DataTable'
 import { FormFields, type FieldSpec } from './FormFields'
@@ -154,15 +154,15 @@ export function CrudPage<T extends Row>(config: CrudConfig<T>) {
         footer={data && <Pagination page={data.page} pages={data.pages} count={data.count} onChange={setPage} />}
       />
 
-      <Modal open={creating || !!editing} title={`${editing ? 'Editar' : 'Registrar'} ${config.singular}`} onClose={close} wide={config.fields.length > 6}>
+      <Modal open={creating || !!editing} title={`${editing ? 'Editar' : 'Registrar'} ${config.singular}`} onClose={close}>
         <form onSubmit={submit} className="space-y-4" noValidate>
           <FormFields fields={config.fields} form={form} editing={!!editing} />
           <ErrorAlert error={mutationError} />
           {config.appendOnly && <p className="text-muted text-xs">Este registro no podrá modificarse ni eliminarse después de guardarlo.</p>}
-          <div className="flex justify-end gap-2">
+          <ModalActions>
             <button type="button" className="btn-secondary" onClick={close}>Cancelar</button>
             <button className="btn-primary" disabled={form.formState.isSubmitting}>Guardar</button>
-          </div>
+          </ModalActions>
         </form>
       </Modal>
 

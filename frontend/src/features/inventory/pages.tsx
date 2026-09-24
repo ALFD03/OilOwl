@@ -9,7 +9,7 @@ import { DataTable, Pagination } from '../../components/data/DataTable'
 import { ErrorAlert } from '../../components/ui/Alert'
 import { Badge } from '../../components/ui/Badge'
 import { Field } from '../../components/ui/Field'
-import { Modal } from '../../components/ui/Modal'
+import { Modal, ModalActions } from '../../components/ui/Modal'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { dateTime, liters, nowLocal, signedLiters, signedMoney } from '../../lib/format'
 import { useStation } from '../../lib/stationContext'
@@ -125,10 +125,10 @@ export function ReconciliationsPage() {
             </select>
           </Field>
           <ErrorAlert error={run.error} />
-          <div className="flex justify-end gap-2">
+          <ModalActions>
             <button className="btn-secondary" onClick={() => setOpen(false)}>Cancelar</button>
             <button className="btn-primary" disabled={!tank || !reading || run.isPending} onClick={() => run.mutateAsync({ body: { tank, closing_reading: reading, notes: '' } }).then(() => setOpen(false)).catch(() => undefined)}>Conciliar</button>
-          </div>
+          </ModalActions>
         </div>
       </Modal>
     </div>

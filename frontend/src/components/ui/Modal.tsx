@@ -1,7 +1,35 @@
+/**
+ * Modales de la aplicación.
+ *
+ * Se renderizan en <body> mediante un portal: si quedaran dentro de la página, cualquier
+ * ancestro con `transform` (animaciones de entrada, tarjetas con hover) se volvería su
+ * contenedor y el modal quedaría encerrado a la altura de la tabla que lo abrió.
+ */
 import { X } from 'lucide-react'
 import { useEffect, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 
-export function Modal({ open, title, onClose, children, wide = false }: { open: boolean; title: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
+import { cn } from '../../lib/cn'
+
+type Size = 'sm' | 'xl'
+
+const SIZES: Record<Size, string> = {
+  // Formularios y detalles: casi toda la pantalla, con desplazamiento interno.
+  xl: 'w-[96vw] max-w-7xl min-h-[min(80vh,720px)] max-h-[92vh]',
+  // Confirmaciones breves.
+  sm: 'w-full max-w-lg max-h-[92vh]',
+}
+
+export function Modal({
+  open, title, onClose, children, size = 'xl', description,
+}: {
+  open: boolean
+  title: string
+  onClose: () => void
+  children: ReactNode
+  size?: Size
+  description?: ReactNode
+}) {
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -15,28 +43,37 @@ export function Modal({ open, title, onClose, children, wide = false }: { open: 
   }, [open, onClose])
 
   if (!open) return null
-  return (
+  return createPortal(
     <div
-      className="animate-fade-in fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[#050a14]/70 p-4 pt-[8vh] backdrop-blur-sm"
+      className="animate-fade-in fixed inset-0 z-50 flex items-center justify-center bg-[#050a14]/75 p-3 backdrop-blur-md sm:p-6"
       onMouseDown={onClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`card animate-scale-in w-full ${wide ? 'max-w-3xl' : 'max-w-lg'} p-6 shadow-[var(--shadow-lg)]`}
+        className={cn('card animate-scale-in flex flex-col overflow-hidden shadow-[var(--shadow-lg)]', SIZES[size])}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="mb-5 flex items-center justify-between gap-4">
-          <h2 className="font-display text-xl font-semibold">{title}</h2>
+        <header className="border-base flex shrink-0 items-start justify-between gap-4 border-b px-6 py-4 sm:px-8">
+          <div className="min-w-0">
+            <h2 className="font-display text-2xl font-semibold">{title}</h2>
+            {description && <p className="text-muted mt-1 text-sm">{description}</p>}
+          </div>
           <button className="btn-ghost -mr-2 p-2" onClick={onClose} aria-label="Cerrar">
-            <X className="size-4" />
+            <X className="size-5" />
           </button>
-        </div>
-        {children}
+        </header>
+        <div className="modal-body">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
+}
+
+/** Barra de acciones del modal: queda fija al pie aunque el contenido se desplace. */
+export function ModalActions({ children }: { children: ReactNode }) {
+  return <div className="modal-actions">{children}</div>
 }
 
 export function ConfirmModal({
@@ -46,14 +83,14 @@ export function ConfirmModal({
   onConfirm: () => void; onClose: () => void; children?: ReactNode
 }) {
   return (
-    <Modal open={open} title={title} onClose={onClose}>
+    <Modal open={open} title={title} onClose={onClose} size="sm">
       <div className="space-y-5 text-sm">
         <div className="text-soft leading-relaxed">{message}</div>
         {children}
-        <div className="flex justify-end gap-2">
+        <ModalActions>
           <button className="btn-secondary" onClick={onClose}>Cancelar</button>
           <button className={danger ? 'btn-danger' : 'btn-primary'} disabled={busy} onClick={onConfirm}>{confirmLabel}</button>
-        </div>
+        </ModalActions>
       </div>
     </Modal>
   )

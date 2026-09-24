@@ -51,7 +51,7 @@ function RelationSelect({ spec, register, disabled }: { spec: FieldSpec; registe
 export function FormFields<T extends FieldValues>({ fields, form, editing }: { fields: FieldSpec[]; form: UseFormReturn<T>; editing: boolean }) {
   const { register, formState } = form
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2 xl:grid-cols-3">
       {fields
         .filter((f) => !(editing && f.hideOnEdit) && !(!editing && f.hideOnCreate))
         .map((spec) => {
@@ -97,7 +97,7 @@ export function FormFields<T extends FieldValues>({ fields, form, editing }: { f
             )
           }
           return (
-            <Field key={spec.name} label={spec.label + (spec.required ? ' *' : '')} error={error} hint={spec.hint} className={spec.span === 2 ? 'sm:col-span-2' : ''}>
+            <Field key={spec.name} label={spec.label + (spec.required ? ' *' : '')} error={error} hint={spec.hint} className={spec.span === 2 ? 'md:col-span-2' : ''}>
               {control}
             </Field>
           )

@@ -283,6 +283,26 @@ body {
     @apply rounded-lg;
   }
 
+  /* El contenido del modal ocupa todo el alto disponible y sus acciones van al pie. */
+  .modal-body > :only-child {
+    display: flex;
+    flex: 1 0 auto;
+    flex-direction: column;
+  }
+  /* Con barra de acciones, el cuerpo no lleva relleno inferior: la barra fija queda
+     pegada al borde y el contenido no se asoma por debajo al desplazarse. */
+  .modal-body {
+    @apply flex flex-1 flex-col overflow-y-auto px-6 pt-6 pb-6 sm:px-8;
+  }
+  .modal-body:has(.modal-actions) {
+    padding-bottom: 0;
+  }
+  .modal-actions {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    @apply sticky bottom-0 z-10 -mx-6 mt-auto flex flex-wrap justify-end gap-2 px-6 py-4 sm:-mx-8 sm:px-8;
+  }
+
   .gold-divider {
     height: 1px;
     background: linear-gradient(90deg, transparent, rgb(197 160 89 / 0.45), transparent);

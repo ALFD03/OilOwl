@@ -9,7 +9,7 @@ import { DataTable, Pagination } from '../../components/data/DataTable'
 import { ErrorAlert } from '../../components/ui/Alert'
 import { Badge } from '../../components/ui/Badge'
 import { Field } from '../../components/ui/Field'
-import { ConfirmModal, Modal } from '../../components/ui/Modal'
+import { ConfirmModal, Modal, ModalActions } from '../../components/ui/Modal'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { dateTime } from '../../lib/format'
 import { useStation } from '../../lib/stationContext'
@@ -120,7 +120,7 @@ export function UsersPage() {
         footer={list.data && <Pagination page={list.data.page} pages={list.data.pages} count={list.data.count} onChange={setPage} />}
       />
 
-      <Modal open={!!draft} title={draft?.id ? 'Editar usuario' : 'Nuevo usuario'} onClose={() => setDraft(null)} wide>
+      <Modal open={!!draft} title={draft?.id ? 'Editar usuario' : 'Nuevo usuario'} onClose={() => setDraft(null)}>
         {draft && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -149,10 +149,10 @@ export function UsersPage() {
               <PermissionPicker value={draft.permissions ?? []} onChange={(permissions) => setDraft({ ...draft, permissions })} />
             </div>
             <ErrorAlert error={create.error ?? update.error} />
-            <div className="flex justify-end gap-2">
+            <ModalActions>
               <button className="btn-secondary" onClick={() => setDraft(null)}>Cancelar</button>
               <button className="btn-primary" disabled={create.isPending || update.isPending} onClick={save}>Guardar</button>
-            </div>
+            </ModalActions>
           </div>
         )}
       </Modal>
@@ -163,10 +163,10 @@ export function UsersPage() {
             <input className="input" type="password" autoComplete="new-password" value={newPwd} onChange={(e) => setNewPwd(e.target.value)} />
           </Field>
           <ErrorAlert error={actionError} />
-          <div className="flex justify-end gap-2">
+          <ModalActions>
             <button className="btn-secondary" onClick={() => setPwdUser(null)}>Cancelar</button>
             <button className="btn-primary" disabled={newPwd.length < 10} onClick={setPassword}>Guardar</button>
-          </div>
+          </ModalActions>
         </div>
       </Modal>
 

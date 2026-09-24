@@ -40,7 +40,7 @@ export function AuditPage() {
         ]}
         footer={list.data && <Pagination page={list.data.page} pages={list.data.pages} count={list.data.count} onChange={setPage} />}
       />
-      <Modal open={!!detail} title="Detalle de auditoría" onClose={() => setDetail(null)} wide>
+      <Modal open={!!detail} title="Detalle de auditoría" onClose={() => setDetail(null)}>
         {detail && (
           <div className="grid gap-3 text-xs sm:grid-cols-2">
             {(['before', 'after'] as const).map((k) => (

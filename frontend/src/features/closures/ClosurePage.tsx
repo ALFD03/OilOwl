@@ -15,7 +15,7 @@ import { TerminalAmountList, type TerminalEntry } from '../../components/money/T
 import { Alert, ErrorAlert } from '../../components/ui/Alert'
 import { StatusBadge } from '../../components/ui/Badge'
 import { Field } from '../../components/ui/Field'
-import { ConfirmModal, Modal } from '../../components/ui/Modal'
+import { ConfirmModal, Modal, ModalActions } from '../../components/ui/Modal'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { Spinner } from '../../components/ui/Spinner'
 import { readingAmounts, readingLiters, summarize, toUsd, toVes, type Currency } from '../../lib/closureMath'
@@ -374,10 +374,10 @@ function Adjustments({ closure }: { closure: Closure }) {
             <Field label="Litros"><input className="input" type="number" step="0.001" value={form.liters} onChange={(e) => setForm({ ...form, liters: e.target.value })} /></Field>
           </div>
           <ErrorAlert error={create.error} />
-          <div className="flex justify-end gap-2">
+          <ModalActions>
             <button className="btn-secondary" onClick={() => setOpen(false)}>Cancelar</button>
             <button className="btn-primary" disabled={!form.reason.trim() || create.isPending} onClick={() => create.mutateAsync({ closure: closure.id, ...form } as never).then(() => setOpen(false)).catch(() => undefined)}>Guardar</button>
-          </div>
+          </ModalActions>
         </div>
       </Modal>
     </section>

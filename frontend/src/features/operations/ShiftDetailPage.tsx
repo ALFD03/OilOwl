@@ -9,7 +9,7 @@ import { Can } from '../../auth/Can'
 import { Alert, ErrorAlert } from '../../components/ui/Alert'
 import { StatusBadge } from '../../components/ui/Badge'
 import { Field } from '../../components/ui/Field'
-import { ConfirmModal, Modal } from '../../components/ui/Modal'
+import { ConfirmModal, Modal, ModalActions } from '../../components/ui/Modal'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { Spinner } from '../../components/ui/Spinner'
 import { StatCard } from '../../components/ui/StatCard'
@@ -59,10 +59,10 @@ function OpenIslandModal({ shift, island, onClose }: { shift: Shift; island: Isl
           )}
         </div>
         <ErrorAlert error={create.error} />
-        <div className="flex justify-end gap-2">
+        <ModalActions>
           <button className="btn-secondary" onClick={onClose}>Cancelar</button>
           <button className="btn-primary" disabled={create.isPending} onClick={submit}>Abrir isla</button>
-        </div>
+        </ModalActions>
       </div>
     </Modal>
   )

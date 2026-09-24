@@ -10,7 +10,7 @@ import { DataTable, Pagination } from '../../components/data/DataTable'
 import { Alert, ErrorAlert } from '../../components/ui/Alert'
 import { StatusBadge } from '../../components/ui/Badge'
 import { Field } from '../../components/ui/Field'
-import { Modal } from '../../components/ui/Modal'
+import { Modal, ModalActions } from '../../components/ui/Modal'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { date, rate, today } from '../../lib/format'
 import { useStation } from '../../lib/stationContext'
@@ -92,10 +92,10 @@ export function ShiftsPage() {
           )}
           <Field label="Observaciones"><input className="input" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></Field>
           <ErrorAlert error={create.error} />
-          <div className="flex justify-end gap-2">
+          <ModalActions>
             <button className="btn-secondary" onClick={() => setOpen(false)}>Cancelar</button>
             <button className="btn-primary" disabled={create.isPending || (form.rate !== '' && !(Number(form.rate) > 0))} onClick={submit}>Abrir</button>
-          </div>
+          </ModalActions>
         </div>
       </Modal>
     </div>

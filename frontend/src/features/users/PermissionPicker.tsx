@@ -11,6 +11,23 @@ const APP_LABELS: Record<string, string> = {
   operations: 'Jornadas', closures: 'Cierres', inventory: 'Inventario', reports: 'Reportes',
 }
 
+const VERBS: Record<string, string> = { add: 'Crear', change: 'Editar', delete: 'Eliminar o desactivar', view: 'Ver' }
+const MODELS: Record<string, string> = {
+  user: 'usuarios', group: 'roles', permission: 'permisos', auditlog: 'la auditoría', station: 'estaciones',
+  fueltype: 'combustibles', island: 'islas', pump: 'surtidores', fuelprice: 'precios', denomination: 'denominaciones',
+  paymentterminal: 'puntos de venta y BioPago', attendant: 'bomberos', exchangerate: 'tasas de cambio',
+  shifttemplate: 'turnos', assignment: 'horarios', shift: 'jornadas', closure: 'cierres',
+  closureadjustment: 'ajustes de cierre', tank: 'tanques', tankreading: 'mediciones de tanque', delivery: 'descargas',
+  reconciliation: 'conciliaciones',
+}
+
+/** Los permisos estándar de Django vienen en inglés ("Can add user"); se muestran en español. */
+function permissionLabel(p: PermissionItem) {
+  const match = /^(add|change|delete|view)_(\w+)$/.exec(p.code.split('.')[1] ?? '')
+  if (match && p.name.startsWith('Can ')) return `${VERBS[match[1]]} ${MODELS[match[2]] ?? match[2]}`
+  return p.name
+}
+
 function usePermissionsCatalog() {
   return useQuery({ queryKey: ['permissions'], queryFn: () => api<PermissionItem[]>('permissions'), staleTime: 5 * 60_000 })
 }
@@ -25,7 +42,7 @@ export function PermissionPicker({ value, onChange }: { value: string[]; onChang
   const groups = useMemo(() => {
     const map = new Map<string, PermissionItem[]>()
     data
-      .filter((p) => !filter || `${p.name} ${p.code}`.toLowerCase().includes(filter.toLowerCase()))
+      .filter((p) => !filter || `${permissionLabel(p)} ${p.code}`.toLowerCase().includes(filter.toLowerCase()))
       .forEach((p) => map.set(p.app_label, [...(map.get(p.app_label) ?? []), p]))
     return [...map.entries()]
   }, [data, filter])
@@ -60,7 +77,7 @@ export function PermissionPicker({ value, onChange }: { value: string[]; onChang
                       checked={selected.has(p.code)}
                       onChange={(e) => toggle([p.code], e.target.checked)}
                     />
-                    {p.name}
+                    {permissionLabel(p)}
                   </label>
                 ))}
               </div>
