@@ -12,7 +12,7 @@ import { Field } from '../../components/ui/Field'
 import { ConfirmModal, Modal } from '../../components/ui/Modal'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { dateTime } from '../../lib/format'
-import { useStation } from '../../lib/station'
+import { useStation } from '../../lib/stationContext'
 import { PermissionPicker } from './PermissionPicker'
 
 type Draft = Partial<User> & { password?: string; stations?: string[] }
@@ -25,7 +25,7 @@ function CheckList({ items, value, onChange }: { items: { id: string | number; l
         <label key={item.id} className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"
-            className="accent-amber-600"
+            className="accent-brand-500"
             checked={set.has(String(item.id))}
             onChange={(e) => onChange(e.target.checked ? [...value, item.id] : value.filter((v) => String(v) !== String(item.id)))}
           />
@@ -114,7 +114,7 @@ export function UsersPage() {
             {u.is_login_locked && <Can perm="accounts.unlock_user"><button className="btn-ghost p-1.5" title="Desbloquear" onClick={() => unlock(u)}><LockOpen className="size-4" /></button></Can>}
             <Can perm="accounts.set_user_password"><button className="btn-ghost p-1.5" title="Restablecer contraseña" onClick={() => { setActionError(null); setPwdUser(u) }}><KeyRound className="size-4" /></button></Can>
             <Can perm="accounts.change_user"><button className="btn-ghost p-1.5" title="Editar" onClick={() => open(u)}><Pencil className="size-4" /></button></Can>
-            {u.is_active && <Can perm="accounts.delete_user"><button className="btn-ghost p-1.5 text-red-600" title="Desactivar" onClick={() => setDeactivating(u)}><Power className="size-4" /></button></Can>}
+            {u.is_active && <Can perm="accounts.delete_user"><button className="btn-ghost p-1.5 text-negative" title="Desactivar" onClick={() => setDeactivating(u)}><Power className="size-4" /></button></Can>}
           </div>
         )}
         footer={list.data && <Pagination page={list.data.page} pages={list.data.pages} count={list.data.count} onChange={setPage} />}
@@ -134,8 +134,8 @@ export function UsersPage() {
                 </Field>
               )}
               <div className="flex flex-col justify-end gap-2 pb-1 text-sm">
-                <label className="flex items-center gap-2"><input type="checkbox" className="accent-amber-600" checked={!!draft.is_active} onChange={(e) => setDraft({ ...draft, is_active: e.target.checked })} /> Activo</label>
-                <label className="flex items-center gap-2"><input type="checkbox" className="accent-amber-600" checked={!!draft.must_change_password} onChange={(e) => setDraft({ ...draft, must_change_password: e.target.checked })} /> Debe cambiar la contraseña al ingresar</label>
+                <label className="flex items-center gap-2"><input type="checkbox" className="accent-brand-500" checked={!!draft.is_active} onChange={(e) => setDraft({ ...draft, is_active: e.target.checked })} /> Activo</label>
+                <label className="flex items-center gap-2"><input type="checkbox" className="accent-brand-500" checked={!!draft.must_change_password} onChange={(e) => setDraft({ ...draft, must_change_password: e.target.checked })} /> Debe cambiar la contraseña al ingresar</label>
               </div>
             </div>
             <Field label="Estaciones">

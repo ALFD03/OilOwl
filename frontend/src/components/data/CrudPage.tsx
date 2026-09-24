@@ -10,7 +10,7 @@ import { ApiError } from '../../api/client'
 import type { Resource } from '../../api/resource'
 import { Can } from '../../auth/Can'
 import { usePermission } from '../../auth/AuthContext'
-import { useStation } from '../../lib/station'
+import { useStation } from '../../lib/stationContext'
 import { ErrorAlert } from '../ui/Alert'
 import { ConfirmModal, Modal } from '../ui/Modal'
 import { PageHeader } from '../ui/PageHeader'
@@ -144,7 +144,7 @@ export function CrudPage<T extends Row>(config: CrudConfig<T>) {
                   )}
                   {!config.appendOnly && config.canDeactivate !== false && row.is_active !== false && (
                     <Can perm={permName(config.perm, 'delete')}>
-                      <button className="btn-ghost p-1.5 text-red-600" title="Desactivar" onClick={() => setDeactivating(row)}><Power className="size-4" /></button>
+                      <button className="btn-ghost p-1.5 text-negative" title="Desactivar" onClick={() => setDeactivating(row)}><Power className="size-4" /></button>
                     </Can>
                   )}
                 </div>

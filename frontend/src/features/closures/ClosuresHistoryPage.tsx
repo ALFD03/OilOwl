@@ -11,7 +11,7 @@ import { Alert, ErrorAlert } from '../../components/ui/Alert'
 import { StatusBadge } from '../../components/ui/Badge'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { daysAgo, date, liters, money, signedMoney, today } from '../../lib/format'
-import { useStation } from '../../lib/station'
+import { useStation } from '../../lib/stationContext'
 
 export function ClosuresHistoryPage() {
   const { stationId } = useStation()
@@ -76,7 +76,7 @@ export function ClosuresHistoryPage() {
           { key: 'attendant_name', label: 'Bombero', render: (c) => c.attendant_name ?? '—' },
           { key: 'expected_liters', label: 'Litros', numeric: true, render: (c) => liters(c.expected_liters) },
           { key: 'expected_usd', label: 'Venta', numeric: true, render: (c) => money(c.expected_usd) },
-          { key: 'diff_usd', label: 'Diferencia', numeric: true, render: (c) => <span className={Number(c.diff_usd) < 0 ? 'text-red-600' : ''}>{signedMoney(c.diff_usd)}</span> },
+          { key: 'diff_usd', label: 'Diferencia', numeric: true, render: (c) => <span className={Number(c.diff_usd) < 0 ? 'text-negative' : ''}>{signedMoney(c.diff_usd)}</span> },
           { key: 'result', label: 'Resultado', render: (c) => (c.status === 'DRAFT' ? '—' : <StatusBadge value={c.result} />) },
           { key: 'status', label: 'Estado', render: (c) => <StatusBadge value={c.status} /> },
         ]}

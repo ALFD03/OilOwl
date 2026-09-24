@@ -1,16 +1,9 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 
 import { useAuth } from '../auth/AuthContext'
+import { StationContext, type StationState } from './stationContext'
 
 const STORAGE_KEY = 'oilowl.station'
-
-interface StationState {
-  stationId: string
-  setStationId: (id: string) => void
-  stations: { id: string; code: string; name: string }[]
-}
-
-const StationContext = createContext<StationState | null>(null)
 
 function readStored() {
   try {
@@ -23,14 +16,12 @@ function readStored() {
 export function StationProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const stations = useMemo(() => (user?.stations ?? []) as StationState['stations'], [user])
-  const [stationId, setStationIdState] = useState(readStored)
-
-  useEffect(() => {
-    if (stations.length && !stations.some((s) => s.id === stationId)) setStationIdState(stations[0].id)
-  }, [stations, stationId])
+  const [selected, setSelected] = useState(readStored)
+  // Si la estación guardada ya no está disponible se usa la primera asignada.
+  const stationId = stations.some((s) => s.id === selected) ? selected : (stations[0]?.id ?? '')
 
   const setStationId = (id: string) => {
-    setStationIdState(id)
+    setSelected(id)
     try {
       localStorage.setItem(STORAGE_KEY, id)
     } catch {
@@ -39,10 +30,4 @@ export function StationProvider({ children }: { children: ReactNode }) {
   }
 
   return <StationContext.Provider value={{ stationId, setStationId, stations }}>{children}</StationContext.Provider>
-}
-
-export function useStation() {
-  const ctx = useContext(StationContext)
-  if (!ctx) throw new Error('useStation debe usarse dentro de <StationProvider>')
-  return ctx
 }

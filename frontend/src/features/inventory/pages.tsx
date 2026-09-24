@@ -12,7 +12,7 @@ import { Field } from '../../components/ui/Field'
 import { Modal } from '../../components/ui/Modal'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { dateTime, liters, nowLocal, signedLiters, signedMoney } from '../../lib/format'
-import { useStation } from '../../lib/station'
+import { useStation } from '../../lib/stationContext'
 
 type Row = Record<string, unknown> & { id: string }
 const toIso = (field: string) => (v: Record<string, unknown>) => ({ ...v, [field]: new Date(String(v[field])).toISOString() })
@@ -104,7 +104,7 @@ export function ReconciliationsPage() {
           { key: 'sold_liters', label: '− Vendido', numeric: true, render: (r) => liters(r.sold_liters) },
           { key: 'expected_liters', label: 'Esperado', numeric: true, render: (r) => liters(r.expected_liters) },
           { key: 'measured_liters', label: 'Medido', numeric: true, render: (r) => liters(r.measured_liters) },
-          { key: 'variance_liters', label: 'Diferencia', numeric: true, render: (r) => <span className={Number(r.variance_liters) < 0 ? 'text-red-600' : ''}>{signedLiters(r.variance_liters)} ({Number(r.variance_pct).toFixed(2)} %)</span> },
+          { key: 'variance_liters', label: 'Diferencia', numeric: true, render: (r) => <span className={Number(r.variance_liters) < 0 ? 'text-negative' : ''}>{signedLiters(r.variance_liters)} ({Number(r.variance_pct).toFixed(2)} %)</span> },
           { key: 'variance_usd', label: '$ / Bs', numeric: true, render: (r) => <div>{signedMoney(r.variance_usd)}<div className="text-muted text-xs">{signedMoney(r.variance_ves, 'VES')}</div></div> },
           { key: 'within_tolerance', label: 'Tolerancia', render: (r) => (r.within_tolerance ? <Badge tone="green">Dentro</Badge> : <Badge tone="red">Fuera</Badge>) },
         ]}

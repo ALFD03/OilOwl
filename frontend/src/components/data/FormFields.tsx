@@ -5,7 +5,7 @@
 import type { FieldValues, Path, UseFormReturn } from 'react-hook-form'
 
 import type { Resource } from '../../api/resource'
-import { useStation } from '../../lib/station'
+import { useStation } from '../../lib/stationContext'
 import { Field } from '../ui/Field'
 
 export type FieldType =
@@ -67,7 +67,7 @@ export function FormFields<T extends FieldValues>({ fields, form, editing }: { f
           if (type === 'checkbox') {
             return (
               <label key={spec.name} className="flex items-center gap-2 self-end pb-2 text-sm">
-                <input type="checkbox" className="size-4 accent-amber-600" {...register(name)} disabled={disabled} />
+                <input type="checkbox" className="size-4 accent-brand-500" {...register(name)} disabled={disabled} />
                 {spec.label}
               </label>
             )

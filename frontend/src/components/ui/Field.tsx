@@ -5,8 +5,8 @@ export function Field({ label, error, hint, children, className }: { label: stri
     <label className={`block ${className ?? ''}`}>
       <span className="label">{label}</span>
       {children}
-      {hint && !error && <span className="text-muted mt-1 block text-xs">{hint}</span>}
-      {error && <span className="mt-1 block text-xs text-red-600">{error}</span>}
+      {hint && !error && <span className="text-muted mt-1.5 block text-xs">{hint}</span>}
+      {error && <span className="text-negative animate-fade-in mt-1.5 block text-xs">{error}</span>}
     </label>
   )
 }

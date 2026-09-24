@@ -16,7 +16,8 @@ export function RequirePerm({ perm }: { perm: string | string[] }) {
   const allowed = usePermission(perm)
   if (!allowed) {
     return (
-      <div className="card p-10 text-center">
+      <div className="card animate-fade-up p-12 text-center">
+        <img src="/brand/isotipo.webp" alt="" className="mx-auto mb-4 size-14 opacity-80" />
         <h2 className="text-lg font-semibold">Acceso restringido</h2>
         <p className="text-muted mt-1 text-sm">No tiene permiso para ver esta sección. Solicítelo a un administrador.</p>
       </div>

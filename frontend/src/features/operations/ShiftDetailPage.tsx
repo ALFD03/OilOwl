@@ -1,4 +1,4 @@
-import { Lock, PlayCircle } from 'lucide-react'
+import { DollarSign, Fuel, Lock, PlayCircle, Scale } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
@@ -11,6 +11,7 @@ import { Field } from '../../components/ui/Field'
 import { ConfirmModal, Modal } from '../../components/ui/Modal'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { Spinner } from '../../components/ui/Spinner'
+import { StatCard } from '../../components/ui/StatCard'
 import { date, liters, money, rate, signedMoney } from '../../lib/format'
 
 function OpenIslandModal({ shift, island, onClose }: { shift: Shift; island: Island; onClose: () => void }) {
@@ -101,18 +102,18 @@ export function ShiftDetailPage() {
           )
         }
       />
-      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="card p-4"><div className="label">Litros</div><div className="text-xl font-semibold tabular-nums">{liters(totals.liters)}</div></div>
-        <div className="card p-4"><div className="label">Ventas</div><div className="text-xl font-semibold tabular-nums">{money(totals.usd)}</div></div>
-        <div className="card p-4"><div className="label">Sobrante / faltante</div><div className={`text-xl font-semibold tabular-nums ${totals.diff < 0 ? 'text-red-600' : totals.diff > 0 ? 'text-sky-600' : ''}`}>{signedMoney(totals.diff)}</div></div>
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard icon={Fuel} label="Litros" value={liters(totals.liters)} />
+        <StatCard icon={DollarSign} label="Ventas" value={money(totals.usd)} />
+        <StatCard icon={Scale} label="Sobrante / faltante" value={signedMoney(totals.diff)} tone={totals.diff < 0 ? 'bad' : undefined} />
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {islandList.data?.map((island) => {
           const closure = byIsland.get(island.id)
           return (
-            <div key={island.id} className="card flex flex-col gap-3 p-4">
+            <div key={island.id} className="card card-interactive animate-fade-up flex flex-col gap-3 p-5">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold">{island.name}</h3>
+                <h3 className="font-display text-lg font-semibold">{island.name}</h3>
                 {closure ? <StatusBadge value={closure.status} /> : <span className="text-muted text-xs">Sin abrir</span>}
               </div>
               {closure ? (

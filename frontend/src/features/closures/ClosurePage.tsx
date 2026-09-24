@@ -18,7 +18,7 @@ import { Field } from '../../components/ui/Field'
 import { ConfirmModal, Modal } from '../../components/ui/Modal'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { Spinner } from '../../components/ui/Spinner'
-import { summarize, readingLiters, type Currency } from '../../lib/closureMath'
+import { readingAmounts, readingLiters, summarize, type Currency } from '../../lib/closureMath'
 import { cn } from '../../lib/cn'
 import { date, dateTime, liters, money, rate, signedLiters, signedMoney } from '../../lib/format'
 
@@ -135,7 +135,7 @@ export function ClosurePage() {
         declaredUsd: closure.declared_usd, declaredVes: closure.declared_ves, diffUsd: closure.diff_usd,
         diffVes: closure.diff_ves, diffLiters: closure.diff_liters, result: closure.result,
       }
-  const diffTone = Number(s.diffUsd) < 0 ? 'text-red-600' : Number(s.diffUsd) > 0 ? 'text-sky-600' : 'text-emerald-600'
+  const diffTone = Number(s.diffUsd) < 0 ? 'text-negative' : Number(s.diffUsd) > 0 ? 'text-info' : 'text-positive'
   const missingFinals = Object.values(draft.readings).some((r) => r.final === '')
   const busy = save.isPending || submit.isPending || lock.isPending || reopen.isPending
   const actionError = save.error ?? submit.error ?? lock.error ?? reopen.error
@@ -199,8 +199,8 @@ export function ClosurePage() {
       {save.isSuccess && editable && !save.isPending && <Alert tone="success">Borrador guardado.</Alert>}
 
       {/* Lecturas */}
-      <section className="card overflow-hidden">
-        <h2 className="border-base border-b px-4 py-3 text-sm font-semibold">Lecturas de surtidores</h2>
+      <section className="card animate-fade-up overflow-hidden">
+        <h2 className="border-base border-b px-5 py-3.5 text-sm font-semibold">Lecturas de surtidores</h2>
         <div className="overflow-x-auto">
           <table className="table-base">
             <thead>
@@ -214,13 +214,14 @@ export function ClosurePage() {
                 const d = draft.readings[r.pump]
                 const lit = editable ? readingLiters({ initial: d.initial, final: d.final, price: r.price, price_currency: r.price_currency as Currency }) : Number(r.liters)
                 const invalid = editable && d.final !== '' && lit === null
+                const preview = editable && lit !== null ? readingAmounts({ initial: d.initial, final: d.final, price: r.price, price_currency: r.price_currency as Currency }, Number(closure.rate)) : null
                 return (
                   <tr key={r.id}>
                     <td>
                       <div className="font-medium">{r.pump_code}</div>
                       <div className="text-muted text-xs">{r.fuel_type_name}</div>
                       {r.has_gap && (
-                        <div className="mt-0.5 inline-flex items-center gap-1 text-xs text-amber-600" title={`El cierre anterior terminó en ${r.expected_initial}`}>
+                        <div className="mt-0.5 inline-flex items-center gap-1 text-xs text-warning" title={`El cierre anterior terminó en ${r.expected_initial}`}>
                           <AlertTriangle className="size-3" /> Difiere del cierre anterior ({r.expected_initial})
                         </div>
                       )}
@@ -232,13 +233,13 @@ export function ClosurePage() {
                     </td>
                     <td className="num">
                       {editable ? (
-                        <input className={cn('input w-32 py-1 text-right tabular-nums', invalid && 'border-red-500')} type="number" step="0.001" min={0} aria-label={`Final ${r.pump_code}`} value={d.final} onChange={(e) => setDraft({ ...draft, readings: { ...draft.readings, [r.pump]: { ...d, final: e.target.value } } })} />
+                        <input className={cn('input w-32 py-1 text-right tabular-nums', invalid && 'border-negative')} type="number" step="0.001" min={0} aria-label={`Final ${r.pump_code}`} value={d.final} onChange={(e) => setDraft({ ...draft, readings: { ...draft.readings, [r.pump]: { ...d, final: e.target.value } } })} />
                       ) : r.final}
                     </td>
                     <td className="num">{lit === null ? '—' : liters(lit)}</td>
                     <td className="num">{money(r.price, r.price_currency as Currency)}</td>
-                    <td className="num">{editable ? '' : money(r.amount_usd)}</td>
-                    <td className="num">{editable ? '' : money(r.amount_ves, 'VES')}</td>
+                    <td className="num">{editable ? (preview ? money(preview.usd) : '—') : money(r.amount_usd)}</td>
+                    <td className="num">{editable ? (preview ? money(preview.ves, 'VES') : '—') : money(r.amount_ves, 'VES')}</td>
                   </tr>
                 )
               })}
@@ -248,7 +249,7 @@ export function ClosurePage() {
       </section>
 
       {/* Arqueo */}
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <section className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <DenominationCounter title="Efectivo en bolívares" denominations={vesDenoms} counts={draft.cash} disabled={!editable} onChange={(cash) => setDraft({ ...draft, cash })} />
         <DenominationCounter title="Efectivo en dólares" denominations={usdDenoms} counts={draft.cash} disabled={!editable} onChange={(cash) => setDraft({ ...draft, cash })} />
         <TerminalAmountList title="Puntos de venta" terminals={posTerms} entries={draft.pos} disabled={!editable} onChange={(pos) => setDraft({ ...draft, pos })} />
@@ -257,7 +258,7 @@ export function ClosurePage() {
 
       {/* Resumen */}
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-[2fr_1fr]">
-        <div className="card overflow-hidden">
+        <div className="card animate-fade-up overflow-hidden">
           <h2 className="border-base flex items-center justify-between border-b px-4 py-3 text-sm font-semibold">
             Cuadre {editable && <span className="text-muted text-xs font-normal">Vista previa · se recalcula en el servidor al guardar</span>}
           </h2>
@@ -273,7 +274,7 @@ export function ClosurePage() {
             </tbody>
           </table>
         </div>
-        <div className="card p-4">
+        <div className="card animate-fade-up p-5">
           <Field label="Observaciones">
             <textarea className="input min-h-28" disabled={!editable} value={draft.notes} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} />
           </Field>

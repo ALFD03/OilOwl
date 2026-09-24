@@ -6,22 +6,30 @@ export function Modal({ open, title, onClose, children, wide = false }: { open: 
     if (!open) return
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    const overflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = overflow
+    }
   }, [open, onClose])
 
   if (!open) return null
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 pt-[8vh]" onMouseDown={onClose}>
+    <div
+      className="animate-fade-in fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[#050a14]/70 p-4 pt-[8vh] backdrop-blur-sm"
+      onMouseDown={onClose}
+    >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`card w-full ${wide ? 'max-w-3xl' : 'max-w-lg'} p-5`}
+        className={`card animate-scale-in w-full ${wide ? 'max-w-3xl' : 'max-w-lg'} p-6 shadow-[var(--shadow-lg)]`}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold">{title}</h2>
-          <button className="btn-ghost p-1" onClick={onClose} aria-label="Cerrar">
+        <div className="mb-5 flex items-center justify-between gap-4">
+          <h2 className="font-display text-xl font-semibold">{title}</h2>
+          <button className="btn-ghost -mr-2 p-2" onClick={onClose} aria-label="Cerrar">
             <X className="size-4" />
           </button>
         </div>
@@ -39,8 +47,8 @@ export function ConfirmModal({
 }) {
   return (
     <Modal open={open} title={title} onClose={onClose}>
-      <div className="space-y-4 text-sm">
-        <div>{message}</div>
+      <div className="space-y-5 text-sm">
+        <div className="text-soft leading-relaxed">{message}</div>
         {children}
         <div className="flex justify-end gap-2">
           <button className="btn-secondary" onClick={onClose}>Cancelar</button>

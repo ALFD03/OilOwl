@@ -22,10 +22,10 @@ export function TerminalAmountList({
     return acc
   }, {})
   return (
-    <div className="card p-4">
+    <div className="card card-interactive animate-fade-up p-5">
       <div className="mb-3 flex items-baseline justify-between">
-        <h3 className="text-sm font-semibold">{title}</h3>
-        <span className="text-sm font-semibold tabular-nums">
+        <h3 className="flex items-center gap-2 text-sm font-semibold"><span className="size-1.5 rounded-full bg-brand-500 shadow-[0_0_8px_rgb(197_160_89/0.9)]" />{title}</h3>
+        <span className="text-gold text-base font-semibold tabular-nums">
           {Object.entries(totals).map(([c, v]) => money(v, c as 'USD' | 'VES')).join(' + ') || money(0, 'VES')}
         </span>
       </div>

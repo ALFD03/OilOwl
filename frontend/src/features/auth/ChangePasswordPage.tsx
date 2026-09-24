@@ -34,7 +34,7 @@ export function ChangePasswordPage() {
   return (
     <div className="mx-auto max-w-md">
       <PageHeader title="Cambiar contraseña" />
-      <form onSubmit={onSubmit} className="card space-y-4 p-5" noValidate>
+      <form onSubmit={onSubmit} className="card animate-fade-up space-y-4 p-6" noValidate>
         {user?.must_change_password && <Alert tone="warning">Debe cambiar su contraseña antes de continuar.</Alert>}
         <Field label="Contraseña actual">
           <input className="input" type="password" autoComplete="current-password" {...register('current_password', { required: true })} />

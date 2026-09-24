@@ -13,7 +13,7 @@ import { Field } from '../../components/ui/Field'
 import { Modal } from '../../components/ui/Modal'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { date, rate, today } from '../../lib/format'
-import { useStation } from '../../lib/station'
+import { useStation } from '../../lib/stationContext'
 
 export function ShiftsPage() {
   const { stationId } = useStation()

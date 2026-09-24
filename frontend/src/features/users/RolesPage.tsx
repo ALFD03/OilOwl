@@ -49,7 +49,7 @@ export function RolesPage() {
         actions={(r) => (
           <div className="flex justify-end gap-1">
             <Can perm="auth.change_group"><button className="btn-ghost p-1.5" onClick={() => { update.reset(); setEditing(r) }} title="Editar"><Pencil className="size-4" /></button></Can>
-            <Can perm="auth.delete_group"><button className="btn-ghost p-1.5 text-red-600" onClick={() => setDeleting(r)} title="Eliminar"><Trash2 className="size-4" /></button></Can>
+            <Can perm="auth.delete_group"><button className="btn-ghost p-1.5 text-negative" onClick={() => setDeleting(r)} title="Eliminar"><Trash2 className="size-4" /></button></Can>
           </div>
         )}
       />

@@ -2,7 +2,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { cn } from '../../lib/cn'
-import { Spinner } from '../ui/Spinner'
+import { Skeleton } from '../ui/Spinner'
 
 export interface Column<T> {
   key: string
@@ -25,7 +25,7 @@ interface Props<T> {
 
 export function DataTable<T extends object>({ columns, rows, loading, empty = 'Sin registros', rowKey, onRowClick, actions, footer }: Props<T>) {
   return (
-    <div className="card overflow-hidden">
+    <div className="card animate-fade-up overflow-hidden">
       <div className="overflow-x-auto">
         <table className="table-base">
           <thead>
@@ -37,16 +37,25 @@ export function DataTable<T extends object>({ columns, rows, loading, empty = 'S
             </tr>
           </thead>
           <tbody>
-            {loading && !rows?.length && (
-              <tr><td colSpan={columns.length + 1} className="py-8 text-center"><Spinner /></td></tr>
-            )}
+            {loading && !rows?.length &&
+              Array.from({ length: 4 }, (_, i) => (
+                <tr key={`sk-${i}`}>
+                  {columns.map((c) => <td key={c.key}><Skeleton className="h-4 w-3/4" /></td>)}
+                  {actions && <td />}
+                </tr>
+              ))}
             {!loading && !rows?.length && (
-              <tr><td colSpan={columns.length + 1} className="text-muted py-8 text-center">{empty}</td></tr>
+              <tr>
+                <td colSpan={columns.length + 1} className="py-14 text-center">
+                  <img src="/brand/isotipo.webp" alt="" className="mx-auto mb-3 size-10 opacity-30 grayscale" />
+                  <span className="text-muted text-sm">{empty}</span>
+                </td>
+              </tr>
             )}
             {rows?.map((row, index) => (
               <tr
                 key={rowKey ? rowKey(row) : String((row as { id?: string }).id ?? index)}
-                className={cn(onRowClick && 'cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.03]')}
+                className={cn('animate-fade-in', onRowClick && 'cursor-pointer')}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
               >
                 {columns.map((c) => (
@@ -66,13 +75,13 @@ export function DataTable<T extends object>({ columns, rows, loading, empty = 'S
 }
 
 export function Pagination({ page, pages, count, onChange }: { page: number; pages: number; count: number; onChange: (page: number) => void }) {
-  if (pages <= 1) return <div className="text-muted px-4 py-2 text-xs">{count} registro(s)</div>
+  if (pages <= 1) return <div className="border-base text-muted border-t px-4 py-2.5 text-xs">{count} registro(s)</div>
   return (
-    <div className="flex items-center justify-between px-4 py-2 text-xs">
+    <div className="border-base flex items-center justify-between border-t px-4 py-2 text-xs">
       <span className="text-muted">{count} registros · página {page} de {pages}</span>
       <div className="flex gap-1">
-        <button className="btn-ghost p-1" disabled={page <= 1} onClick={() => onChange(page - 1)} aria-label="Anterior"><ChevronLeft className="size-4" /></button>
-        <button className="btn-ghost p-1" disabled={page >= pages} onClick={() => onChange(page + 1)} aria-label="Siguiente"><ChevronRight className="size-4" /></button>
+        <button className="btn-secondary px-2 py-1.5" disabled={page <= 1} onClick={() => onChange(page - 1)} aria-label="Anterior"><ChevronLeft className="size-4" /></button>
+        <button className="btn-secondary px-2 py-1.5" disabled={page >= pages} onClick={() => onChange(page + 1)} aria-label="Siguiente"><ChevronRight className="size-4" /></button>
       </div>
     </div>
   )

@@ -6,7 +6,7 @@ import { assignments, attendants, islands, shiftTemplates } from '../../api/reso
 import { usePermission } from '../../auth/AuthContext'
 import { ErrorAlert } from '../../components/ui/Alert'
 import { PageHeader } from '../../components/ui/PageHeader'
-import { useStation } from '../../lib/station'
+import { useStation } from '../../lib/stationContext'
 
 const iso = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 10)
 
@@ -56,7 +56,7 @@ export function SchedulePage() {
         {!templates.data?.length && <span className="text-muted text-sm">Configure primero los turnos de la estación.</span>}
       </div>
       <ErrorAlert error={create.error ?? remove.error} />
-      <div className="card overflow-x-auto">
+      <div className="card animate-fade-up overflow-x-auto">
         <table className="table-base min-w-[900px]">
           <thead>
             <tr>
@@ -75,7 +75,7 @@ export function SchedulePage() {
                     <td key={day} className="align-top">
                       <div className="space-y-1">
                         {cell.map((a) => (
-                          <div key={a.id} className="bg-brand-500/10 flex items-center justify-between gap-1 rounded px-1.5 py-0.5 text-xs">
+                          <div key={a.id} className="animate-scale-in flex items-center justify-between gap-1 rounded-lg bg-brand-500/[0.12] px-2 py-1 text-xs text-gold ring-1 ring-brand-500/20">
                             <span className="truncate">{a.attendant_name}</span>
                             {canDelete && <button onClick={() => remove.mutate(a.id)} aria-label="Quitar"><X className="size-3" /></button>}
                           </div>

@@ -8,12 +8,14 @@ import App from './App'
 import { AuthProvider } from './auth/AuthProvider'
 import './index.css'
 
+// "Night & Gold" oscuro por defecto; se respeta la preferencia guardada.
+let theme = 'dark'
 try {
-  const theme = localStorage.getItem('oilowl.theme')
-  if (theme) document.documentElement.dataset.theme = theme
+  theme = localStorage.getItem('oilowl.theme') === 'light' ? 'light' : 'dark'
 } catch {
   /* sin almacenamiento */
 }
+document.documentElement.dataset.theme = theme
 
 const queryClient = new QueryClient({
   defaultOptions: {

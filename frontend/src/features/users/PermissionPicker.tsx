@@ -47,7 +47,7 @@ export function PermissionPicker({ value, onChange }: { value: string[]; onChang
           return (
             <div key={app}>
               <label className="mb-1 flex items-center gap-2 text-sm font-semibold">
-                <input type="checkbox" className="accent-amber-600" checked={all} onChange={(e) => toggle(codes, e.target.checked)} />
+                <input type="checkbox" className="accent-brand-500" checked={all} onChange={(e) => toggle(codes, e.target.checked)} />
                 {APP_LABELS[app] ?? app}
               </label>
               <div className="grid grid-cols-1 gap-x-4 gap-y-1 pl-6 sm:grid-cols-2">
@@ -55,7 +55,7 @@ export function PermissionPicker({ value, onChange }: { value: string[]; onChang
                   <label key={p.code} className={`flex items-start gap-2 text-xs ${grantable(p.code) ? '' : 'opacity-40'}`} title={p.code}>
                     <input
                       type="checkbox"
-                      className="mt-0.5 accent-amber-600"
+                      className="mt-0.5 accent-brand-500"
                       disabled={!grantable(p.code)}
                       checked={selected.has(p.code)}
                       onChange={(e) => toggle([p.code], e.target.checked)}

@@ -17,7 +17,8 @@ export function money(value: unknown, currency: 'USD' | 'VES' = 'USD') {
 
 export function signedMoney(value: unknown, currency: 'USD' | 'VES' = 'USD') {
   const n = toNumber(value)
-  return `${n > 0 ? '+' : ''}${money(n, currency)}`
+  const sign = n > 0 ? '+' : n < 0 ? '−' : ''
+  return `${sign}${money(Math.abs(n), currency)}`
 }
 
 export function liters(value: unknown) {
@@ -26,7 +27,8 @@ export function liters(value: unknown) {
 
 export function signedLiters(value: unknown) {
   const n = toNumber(value)
-  return `${n > 0 ? '+' : ''}${liters(n)}`
+  const sign = n > 0 ? '+' : n < 0 ? '−' : ''
+  return `${sign}${liters(Math.abs(n))}`
 }
 
 export function rate(value: unknown) {
