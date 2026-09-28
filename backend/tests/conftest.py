@@ -65,6 +65,12 @@ def world(station):
         fuel_type=g91,
         capacity=Decimal("30000"),
         tolerance_pct=Decimal("0.5"),
+        # 100 L por cm hasta 100 cm; luego 133,333 L por cm.
+        calibration=[
+            {"cm": "0.00", "liters": "0.000"},
+            {"cm": "100.00", "liters": "10000.000"},
+            {"cm": "250.00", "liters": "30000.000"},
+        ],
     )
     island = Island.objects.create(station=station, code="I1", name="Isla 1")
     p1 = Pump.objects.create(
@@ -99,6 +105,11 @@ def world(station):
         "usd1": usd1,
         "ves100": ves100,
     }
+
+
+def tank_heights(world, cm="100"):
+    """Medición en cm de los tanques de `world` para abrir o cerrar la jornada."""
+    return [{"tank": str(world["tank"].pk), "height_cm": str(cm)}]
 
 
 @pytest.fixture

@@ -76,7 +76,8 @@ export const TanksPage = () => (
       ...baseColumns, { key: 'fuel_type_name', label: 'Combustible' },
       { key: 'capacity', label: 'Capacidad', numeric: true, render: (r) => liters(r.capacity) },
       { key: 'tolerance_pct', label: 'Tolerancia', numeric: true, render: (r) => `${Number(r.tolerance_pct)} %` },
-      { key: 'last_reading', label: 'Última medición', numeric: true, render: (r) => { const l = r.last_reading as { liters: string } | null; return l ? liters(l.liters) : '—' } },
+      { key: 'calibration', label: 'Aforo', render: (r) => ((r.calibration as unknown[] | undefined)?.length ?? 0) >= 2 ? 'Configurado' : <span className="text-warning">Sin tabla</span> },
+      { key: 'last_reading', label: 'Última medición', numeric: true, render: (r) => { const l = r.last_reading as { liters: string; height_cm: string | null } | null; return l ? <div>{liters(l.liters)}{l.height_cm !== null && <div className="text-muted text-xs">{Number(l.height_cm)} cm</div>}</div> : '—' } },
       activeColumn,
     ]}
     fields={[

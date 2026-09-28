@@ -67,9 +67,10 @@ def shift_snapshot(shift: Shift) -> dict:
 
 
 @transaction.atomic
-def close_shift(shift: Shift, user) -> Shift:
-    """Cierra la jornada cuando todas sus islas están bloqueadas y concilia los tanques."""
-    from apps.inventory.services import reconcile_pending_tanks
+def close_shift(shift: Shift, user, tank_readings=None) -> Shift:
+    """Cierra la jornada cuando todas sus islas están bloqueadas: mide los tanques y los concilia."""
+    from apps.inventory.models import TankReading
+    from apps.inventory.services import reconcile_shift, record_shift_readings
 
     shift = Shift.objects.select_for_update().get(pk=shift.pk)
     if shift.status != LockStatus.DRAFT:
@@ -81,7 +82,8 @@ def close_shift(shift: Shift, user) -> Shift:
     if pending:
         raise BusinessRuleError(f"Hay {pending} cierre(s) de isla sin bloquear.")
 
-    reconciliations = reconcile_pending_tanks(shift)
+    closing = record_shift_readings(shift, TankReading.Kind.CLOSING, tank_readings)
+    reconciliations = reconcile_shift(shift, closing)
     shift.mark_locked(user.pk, "", hashing.chain_hash(hashing.GENESIS, shift_snapshot(shift)))
     shift.save()
     audit.record(

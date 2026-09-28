@@ -11,6 +11,8 @@ from apps.closures.models import Closure, ClosureLine, MeterReading
 from apps.core.exceptions import ImmutableRecordError
 from apps.operations.models import Shift
 
+from .conftest import tank_heights
+
 pytestmark = pytest.mark.django_db
 
 OPERATOR_PERMS = [
@@ -26,7 +28,11 @@ SUPERVISOR_PERMS = OPERATOR_PERMS + ["closures.lock_closure", "closures.verify_c
 
 def open_and_fill(client, world, final_p1="1100", final_p2="2050"):
     """Abre la isla (P1 inicia en 1000, P2 en 2000) y registra finales y arqueo."""
-    shift = client.post("/api/shifts", {"station": str(world["station"].pk), "date": str(date.today())}, format="json")
+    shift = client.post(
+        "/api/shifts",
+        {"station": str(world["station"].pk), "date": str(date.today()), "tank_readings": tank_heights(world)},
+        format="json",
+    )
     assert shift.status_code == 201, shift.data
     closure = client.post(
         "/api/closures",
@@ -89,7 +95,9 @@ def test_full_closure_flow_computes_differences(world, make_user, client_for):
 
     # La siguiente jornada toma como inicial la lectura final anterior.
     shift = Shift.objects.get()
-    shift_close = client.post(f"/api/shifts/{shift.pk}/close")
+    shift_close = client.post(
+        f"/api/shifts/{shift.pk}/close", {"tank_readings": tank_heights(world, "99")}, format="json"
+    )
     assert shift_close.status_code == 200, shift_close.data
 
 
@@ -114,7 +122,11 @@ def test_other_station_is_invisible(world, other_station, make_user, client_for)
 
 def test_submit_requires_final_readings(world, make_user, client_for):
     client = client_for(make_user(stations=[world["station"]], perms=SUPERVISOR_PERMS))
-    shift = client.post("/api/shifts", {"station": str(world["station"].pk), "date": str(date.today())}, format="json")
+    shift = client.post(
+        "/api/shifts",
+        {"station": str(world["station"].pk), "date": str(date.today()), "tank_readings": tank_heights(world)},
+        format="json",
+    )
     closure = client.post(
         "/api/closures",
         {
@@ -198,7 +210,7 @@ def test_next_closure_suggests_previous_final(world, admin, client_for):
     client.post(f"/api/closures/{first['id']}/submit")
     client.post(f"/api/closures/{first['id']}/lock")
     shift = Shift.objects.get()
-    client.post(f"/api/shifts/{shift.pk}/close")
+    client.post(f"/api/shifts/{shift.pk}/close", {"tank_readings": tank_heights(world, "99")}, format="json")
 
     from apps.scheduling.models import ShiftTemplate
 
@@ -207,7 +219,12 @@ def test_next_closure_suggests_previous_final(world, admin, client_for):
     )
     shift2 = client.post(
         "/api/shifts",
-        {"station": str(world["station"].pk), "date": str(date.today()), "shift_template": str(night.pk)},
+        {
+            "station": str(world["station"].pk),
+            "date": str(date.today()),
+            "shift_template": str(night.pk),
+            "tank_readings": tank_heights(world, "99"),
+        },
         format="json",
     )
     closure2 = client.post(

@@ -15,6 +15,7 @@ import { dateTime, liters, nowLocal, signedLiters, signedMoney } from '../../lib
 import { useStation } from '../../lib/stationContext'
 
 type Row = Record<string, unknown> & { id: string }
+const READING_KIND: Record<string, string> = { OPENING: 'Apertura de jornada', CLOSING: 'Cierre de jornada', SPOT: 'Puntual' }
 const toIso = (field: string) => (v: Record<string, unknown>) => ({ ...v, [field]: new Date(String(v[field])).toISOString() })
 
 function useTankNames() {
@@ -27,11 +28,13 @@ export function TankReadingsPage() {
   const tankName = useTankNames()
   return (
     <CrudPage<Row>
-      title="Mediciones de tanque" description="Medición física (varilla o sonda). Son registros permanentes."
+      title="Mediciones de tanque" description="Medición física en cm (varilla o sonda); los litros salen de la tabla de aforo. Incluye las de apertura y cierre de cada jornada. Son registros permanentes."
       singular="medición" resource={tankReadings} perm="inventory.tankreading" stationScoped appendOnly searchable={false}
       columns={[
         { key: 'measured_at', label: 'Fecha', render: (r) => dateTime(r.measured_at as string) },
         { key: 'tank', label: 'Tanque', render: (r) => tankName(r.tank) },
+        { key: 'kind', label: 'Tipo', render: (r) => READING_KIND[r.kind as string] ?? String(r.kind) },
+        { key: 'height_cm', label: 'Altura', numeric: true, render: (r) => (r.height_cm === null ? '—' : `${Number(r.height_cm)} cm`) },
         { key: 'liters', label: 'Litros', numeric: true, render: (r) => liters(r.liters) },
         { key: 'method', label: 'Método' },
         { key: 'notes', label: 'Notas' },
@@ -39,8 +42,7 @@ export function TankReadingsPage() {
       fields={[
         { name: 'tank', label: 'Tanque', type: 'relation', resource: tanks, stationScoped: true, required: true },
         { name: 'measured_at', label: 'Fecha y hora', type: 'datetime', required: true },
-        { name: 'liters', label: 'Litros', type: 'decimal', required: true },
-        { name: 'height_cm', label: 'Altura (cm)', type: 'decimal' },
+        { name: 'height_cm', label: 'Altura (cm)', type: 'decimal', required: true, hint: 'Los litros se calculan con la tabla de aforo del tanque.' },
         { name: 'method', label: 'Método', type: 'select', options: [{ value: 'STICK', label: 'Varilla' }, { value: 'PROBE', label: 'Sonda' }, { value: 'MANUAL', label: 'Manual' }], required: true },
         { name: 'notes', label: 'Notas' },
       ]}
@@ -90,7 +92,7 @@ export function ReconciliationsPage() {
     <div>
       <PageHeader
         title="Conciliación y merma"
-        description="Inventario esperado (inicial + descargas − ventas) contra lo medido. La diferencia es la merma en L, $ y Bs."
+        description="Inventario esperado (inicial + descargas − ventas) contra lo medido. Se concilia automáticamente al cerrar cada jornada; también puede conciliar manualmente."
         actions={<Can perm="inventory.run_reconciliation"><button className="btn-primary" onClick={() => { run.reset(); setOpen(true) }}><Play className="size-4" /> Conciliar</button></Can>}
       />
       <DataTable<Reconciliation>
@@ -99,11 +101,11 @@ export function ReconciliationsPage() {
         columns={[
           { key: 'created_at', label: 'Fecha', render: (r) => dateTime(r.created_at) },
           { key: 'tank_name', label: 'Tanque' },
-          { key: 'opening_liters', label: 'Inicial', numeric: true, render: (r) => liters(r.opening_liters) },
+          { key: 'opening_liters', label: 'Inicial', numeric: true, render: (r) => <div>{liters(r.opening_liters)}{r.opening_height_cm !== null && <div className="text-muted text-xs">{Number(r.opening_height_cm)} cm</div>}</div> },
           { key: 'deliveries_liters', label: '+ Descargas', numeric: true, render: (r) => liters(r.deliveries_liters) },
           { key: 'sold_liters', label: '− Vendido', numeric: true, render: (r) => liters(r.sold_liters) },
           { key: 'expected_liters', label: 'Esperado', numeric: true, render: (r) => liters(r.expected_liters) },
-          { key: 'measured_liters', label: 'Medido', numeric: true, render: (r) => liters(r.measured_liters) },
+          { key: 'measured_liters', label: 'Medido', numeric: true, render: (r) => <div>{liters(r.measured_liters)}{r.closing_height_cm !== null && <div className="text-muted text-xs">{Number(r.closing_height_cm)} cm</div>}</div> },
           { key: 'variance_liters', label: 'Diferencia', numeric: true, render: (r) => <span className={Number(r.variance_liters) < 0 ? 'text-negative' : ''}>{signedLiters(r.variance_liters)} ({Number(r.variance_pct).toFixed(2)} %)</span> },
           { key: 'variance_usd', label: '$ / Bs', numeric: true, render: (r) => <div>{signedMoney(r.variance_usd)}<div className="text-muted text-xs">{signedMoney(r.variance_ves, 'VES')}</div></div> },
           { key: 'within_tolerance', label: 'Tolerancia', render: (r) => (r.within_tolerance ? <Badge tone="green">Dentro</Badge> : <Badge tone="red">Fuera</Badge>) },
@@ -121,7 +123,7 @@ export function ReconciliationsPage() {
           <Field label="Medición de cierre *" hint="Se concilia desde la última conciliación hasta esta medición.">
             <select className="input" value={reading} onChange={(e) => setReading(e.target.value)} disabled={!tank}>
               <option value="">Seleccione…</option>
-              {readings.data?.results.map((r) => <option key={r.id} value={r.id}>{dateTime(r.measured_at)} · {liters(r.liters)}</option>)}
+              {readings.data?.results.map((r) => <option key={r.id} value={r.id}>{dateTime(r.measured_at)} · {r.height_cm !== null ? `${Number(r.height_cm)} cm · ` : ''}{liters(r.liters)}</option>)}
             </select>
           </Field>
           <ErrorAlert error={run.error} />

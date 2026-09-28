@@ -1,6 +1,9 @@
 /**
  * Cierre de caja por isla: lecturas finales → arqueo (efectivo Bs/$, puntos, BioPago) →
  * resumen de sobrante/faltante → enviar → bloquear. El servidor es la fuente de verdad.
+ *
+ * `ClosureEditor` se usa tanto en su propia página (/cierres/:id) como incrustado, una vez por
+ * isla, en el detalle de la jornada.
  */
 import { AlertTriangle, Lock, Save, Send, ShieldCheck, Undo2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -60,6 +63,10 @@ function SummaryRow({ label, usd, ves, lit, strong, tone }: { label: string; usd
 
 export function ClosurePage() {
   const { id } = useParams()
+  return <ClosureEditor id={id!} />
+}
+
+export function ClosureEditor({ id, embedded = false }: { id: string; embedded?: boolean }) {
   const query = closures.useOne(id)
   const closure = query.data
   const editable = closure?.status === 'DRAFT'
@@ -148,7 +155,7 @@ export function ClosurePage() {
     return [...totals.values()]
   }, [closure, editable, payload, denoms.data, terms.data])
 
-  if (query.isLoading || !closure || !draft) return query.error ? <ErrorAlert error={query.error} /> : <Spinner full />
+  if (query.isLoading || !closure || !draft) return query.error ? <ErrorAlert error={query.error} /> : <Spinner full={!embedded} />
 
   // En borrador se muestra la vista previa; enviado o bloqueado, las cifras oficiales del servidor.
   const s = editable && preview
@@ -178,37 +185,51 @@ export function ClosurePage() {
     }
   }
 
+  const actions = (
+    <>
+      {editable && (
+        <>
+          <Can perm="closures.change_closure">
+            <button className="btn-secondary" disabled={busy} onClick={() => saveDraft().catch(() => undefined)}><Save className="size-4" /> Guardar borrador</button>
+          </Can>
+          <Can perm="closures.submit_closure">
+            <button className="btn-primary" disabled={busy || missingFinals} title={missingFinals ? 'Faltan lecturas finales' : ''} onClick={() => setConfirm('submit')}><Send className="size-4" /> Enviar</button>
+          </Can>
+        </>
+      )}
+      {closure.status === 'SUBMITTED' && (
+        <>
+          <Can perm="closures.reopen_closure"><button className="btn-secondary" disabled={busy} onClick={() => setConfirm('reopen')}><Undo2 className="size-4" /> Devolver</button></Can>
+          <Can perm="closures.lock_closure"><button className="btn-primary" disabled={busy} onClick={() => setConfirm('lock')}><Lock className="size-4" /> Bloquear</button></Can>
+        </>
+      )}
+    </>
+  )
+
   return (
     <div className="space-y-5">
-      <PageHeader
-        title={`Cierre ${closure.island_name} · ${date(closure.shift_date)}`}
-        description={
-          <span className="inline-flex flex-wrap items-center gap-2">
-            <StatusBadge value={closure.status} /> Tasa {rate(closure.rate)} Bs/$ · {closure.attendant_name ?? 'Sin bombero'} ·{' '}
-            <Link to={`/jornadas/${closure.shift}`} className="underline">Ver jornada</Link>
-          </span>
-        }
-        actions={
-          <>
-            {editable && (
-              <>
-                <Can perm="closures.change_closure">
-                  <button className="btn-secondary" disabled={busy} onClick={() => saveDraft().catch(() => undefined)}><Save className="size-4" /> Guardar borrador</button>
-                </Can>
-                <Can perm="closures.submit_closure">
-                  <button className="btn-primary" disabled={busy || missingFinals} title={missingFinals ? 'Faltan lecturas finales' : ''} onClick={() => setConfirm('submit')}><Send className="size-4" /> Enviar</button>
-                </Can>
-              </>
-            )}
-            {closure.status === 'SUBMITTED' && (
-              <>
-                <Can perm="closures.reopen_closure"><button className="btn-secondary" disabled={busy} onClick={() => setConfirm('reopen')}><Undo2 className="size-4" /> Devolver</button></Can>
-                <Can perm="closures.lock_closure"><button className="btn-primary" disabled={busy} onClick={() => setConfirm('lock')}><Lock className="size-4" /> Bloquear</button></Can>
-              </>
-            )}
-          </>
-        }
-      />
+      {embedded ? (
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="font-display text-2xl font-semibold">{closure.island_name}</h2>
+            <div className="text-muted mt-1 inline-flex flex-wrap items-center gap-2 text-sm">
+              <StatusBadge value={closure.status} /> {closure.attendant_name ?? 'Sin bombero'}
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">{actions}</div>
+        </div>
+      ) : (
+        <PageHeader
+          title={`Cierre ${closure.island_name} · ${date(closure.shift_date)}`}
+          description={
+            <span className="inline-flex flex-wrap items-center gap-2">
+              <StatusBadge value={closure.status} /> Tasa {rate(closure.rate)} Bs/$ · {closure.attendant_name ?? 'Sin bombero'} ·{' '}
+              <Link to={`/jornadas/${closure.shift}`} className="underline">Ver jornada</Link>
+            </span>
+          }
+          actions={actions}
+        />
+      )}
 
       {closure.status === 'LOCKED' && (
         <Alert tone="success">
@@ -218,7 +239,7 @@ export function ClosurePage() {
           </div>
         </Alert>
       )}
-      {!(Number(closure.rate) > 0) && (
+      {!embedded && !(Number(closure.rate) > 0) && (
         <Alert tone="error">
           La jornada tiene una tasa de cambio inválida ({rate(closure.rate)}), por lo que los pagos en bolívares no se pueden convertir a dólares.{' '}
           <Link to={`/jornadas/${closure.shift}`} className="font-medium underline">Corríjala con «Cambiar tasa» en la jornada</Link>.

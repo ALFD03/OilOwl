@@ -18,6 +18,9 @@ class Tank(codes.AutoCodeMixin, StationCatalogModel):
     tolerance_pct = models.DecimalField(
         "tolerancia (%)", default=0.5, validators=[MinValueValidator(0)], **PERCENT_FIELD
     )
+    # Tabla de aforo: [{"cm": "0.00", "liters": "0.000"}, ...] ordenada por altura.
+    # Los litros de cada medición se interpolan linealmente entre sus puntos (ver calibration.py).
+    calibration = models.JSONField("tabla de aforo", default=list, blank=True)
 
     class Meta(StationCatalogModel.Meta):
         constraints = [models.UniqueConstraint(fields=["station", "code"], name="uniq_tank_code")]
@@ -43,14 +46,28 @@ class AppendOnlyModel(StationScopedModel):
 
 
 class TankReading(AppendOnlyModel):
-    """Medición física del tanque (varilla o sonda)."""
+    """Medición física del tanque en cm; los litros salen de la tabla de aforo."""
 
     class Method(models.TextChoices):
         STICK = "STICK", "Varilla"
         PROBE = "PROBE", "Sonda"
         MANUAL = "MANUAL", "Manual"
 
+    class Kind(models.TextChoices):
+        OPENING = "OPENING", "Apertura de jornada"
+        CLOSING = "CLOSING", "Cierre de jornada"
+        SPOT = "SPOT", "Puntual"
+
     tank = models.ForeignKey(Tank, on_delete=models.PROTECT, related_name="readings")
+    shift = models.ForeignKey(
+        "operations.Shift",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="tank_readings",
+        verbose_name="jornada",
+    )
+    kind = models.CharField("tipo", max_length=8, choices=Kind.choices, default=Kind.SPOT)
     measured_at = models.DateTimeField("fecha de medición", default=timezone.now)
     liters = models.DecimalField("litros", validators=[MinValueValidator(0)], **LITERS_FIELD)
     height_cm = models.DecimalField("altura (cm)", null=True, blank=True, max_digits=8, decimal_places=2)
@@ -59,12 +76,27 @@ class TankReading(AppendOnlyModel):
 
     class Meta(AppendOnlyModel.Meta):
         ordering = ["-measured_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["shift", "tank", "kind"],
+                condition=models.Q(shift__isnull=False),
+                name="uniq_shift_tank_reading",
+            )
+        ]
 
 
 class Delivery(AppendOnlyModel):
     """Descarga de cisterna."""
 
     tank = models.ForeignKey(Tank, on_delete=models.PROTECT, related_name="deliveries")
+    shift = models.ForeignKey(
+        "operations.Shift",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="deliveries",
+        verbose_name="jornada",
+    )
     delivered_at = models.DateTimeField("fecha de descarga", default=timezone.now)
     liters = models.DecimalField("litros recibidos", validators=[MinValueValidator(0)], **LITERS_FIELD)
     document = models.CharField("guía/factura", max_length=60, blank=True)

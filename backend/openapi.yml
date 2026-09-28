@@ -2706,6 +2706,11 @@ paths:
         required: true
       tags:
       - shifts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CloseShiftRequest'
       security:
       - jwtAuth: []
       responses:
@@ -2743,6 +2748,87 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Shift'
+          description: ''
+  /api/shifts/{id}/tanks:
+    get:
+      operationId: shifts_tanks_list
+      description: 'Inventario de la jornada: medición de apertura, descargas, vendido,
+        esperado y conciliación.'
+      parameters:
+      - in: query
+        name: date
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date__gte
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date__lte
+        schema:
+          type: string
+          format: date
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un Cadena UUID que identifique este shift.
+        required: true
+      - name: ordering
+        required: false
+        in: query
+        description: Qué campo usar para ordenar los resultados.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: Un número de página dentro del conjunto de resultados paginado.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Número de resultados a devolver por página.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: Un término de búsqueda.
+        schema:
+          type: string
+      - in: query
+        name: shift_template
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: status
+        schema:
+          type: string
+          title: Estado
+          enum:
+          - DRAFT
+          - LOCKED
+          - SUBMITTED
+        description: |-
+          * `DRAFT` - Borrador
+          * `SUBMITTED` - Enviado
+          * `LOCKED` - Bloqueado
+      tags:
+      - shifts
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedShiftTankList'
           description: ''
   /api/stations:
     get:
@@ -3823,6 +3909,34 @@ components:
       - object_id
       - ts
       - username
+    CalibrationPoint:
+      type: object
+      properties:
+        cm:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+        liters:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+      required:
+      - cm
+      - liters
+    CalibrationPointRequest:
+      type: object
+      properties:
+        cm:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+        liters:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+      required:
+      - cm
+      - liters
     ChainVerification:
       type: object
       properties:
@@ -3859,6 +3973,14 @@ components:
       required:
       - current_password
       - new_password
+    CloseShiftRequest:
+      type: object
+      description: Medición final (cm) de cada tanque activo de la estación.
+      properties:
+        tank_readings:
+          type: array
+          items:
+            $ref: '#/components/schemas/TankHeightRequest'
     Closure:
       type: object
       description: 'Serializer estándar: los campos de auditoría siempre son de solo
@@ -4360,6 +4482,9 @@ components:
           type: string
           format: uuid
           readOnly: true
+        tank_name:
+          type: string
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -4401,6 +4526,11 @@ components:
         tank:
           type: string
           format: uuid
+        shift:
+          type: string
+          format: uuid
+          nullable: true
+          title: Jornada
       required:
       - created_at
       - created_by
@@ -4408,6 +4538,7 @@ components:
       - liters
       - station
       - tank
+      - tank_name
       - updated_at
       - updated_by
     DeliveryRequest:
@@ -4434,6 +4565,11 @@ components:
         tank:
           type: string
           format: uuid
+        shift:
+          type: string
+          format: uuid
+          nullable: true
+          title: Jornada
       required:
       - liters
       - tank
@@ -5341,6 +5477,24 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Shift'
+    PaginatedShiftTankList:
+      type: object
+      required:
+      - count
+      - page
+      - pages
+      - results
+      properties:
+        count:
+          type: integer
+        page:
+          type: integer
+        pages:
+          type: integer
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShiftTank'
     PaginatedShiftTemplateList:
       type: object
       required:
@@ -5642,6 +5796,11 @@ components:
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,6})?$
           nullable: true
+        tank_readings:
+          type: array
+          items:
+            $ref: '#/components/schemas/TankHeightRequest'
+          writeOnly: true
         date:
           type: string
           format: date
@@ -5716,6 +5875,10 @@ components:
       type: object
       description: Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`).
       properties:
+        calibration:
+          type: array
+          items:
+            $ref: '#/components/schemas/CalibrationPointRequest'
         name:
           type: string
           minLength: 1
@@ -6086,6 +6249,18 @@ components:
         tank_name:
           type: string
           readOnly: true
+        opening_height_cm:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+        closing_height_cm:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
         created_at:
           type: string
           format: date-time
@@ -6173,6 +6348,7 @@ components:
           type: string
           format: uuid
       required:
+      - closing_height_cm
       - closing_reading
       - created_at
       - created_by
@@ -6180,6 +6356,7 @@ components:
       - expected_liters
       - id
       - measured_liters
+      - opening_height_cm
       - opening_liters
       - opening_reading
       - price_usd
@@ -6374,6 +6551,31 @@ components:
       - status
       - updated_at
       - updated_by
+    ShiftReading:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        height_cm:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+          nullable: true
+          title: Altura (cm)
+        liters:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          title: Litros
+        measured_at:
+          type: string
+          format: date-time
+          title: Fecha de medición
+      required:
+      - id
+      - liters
     ShiftRequest:
       type: object
       description: 'Serializer estándar: los campos de auditoría siempre son de solo
@@ -6384,6 +6586,11 @@ components:
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,6})?$
           nullable: true
+        tank_readings:
+          type: array
+          items:
+            $ref: '#/components/schemas/TankHeightRequest'
+          writeOnly: true
         date:
           type: string
           format: date
@@ -6404,6 +6611,73 @@ components:
       required:
       - date
       - station
+    ShiftTank:
+      type: object
+      description: Una fila del inventario de la jornada (GET /shifts/{id}/tanks).
+      properties:
+        tank:
+          type: string
+          format: uuid
+        tank_code:
+          type: string
+        tank_name:
+          type: string
+        fuel_type_name:
+          type: string
+        capacity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        tolerance_pct:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+        calibration:
+          type: array
+          items:
+            $ref: '#/components/schemas/CalibrationPoint'
+        opening:
+          allOf:
+          - $ref: '#/components/schemas/ShiftReading'
+          nullable: true
+        closing:
+          allOf:
+          - $ref: '#/components/schemas/ShiftReading'
+          nullable: true
+        deliveries_liters:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+        sold_liters:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+        expected_liters:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+        reconciliation:
+          allOf:
+          - $ref: '#/components/schemas/Reconciliation'
+          nullable: true
+          readOnly: true
+      required:
+      - calibration
+      - capacity
+      - closing
+      - deliveries_liters
+      - expected_liters
+      - fuel_type_name
+      - opening
+      - reconciliation
+      - sold_liters
+      - tank
+      - tank_code
+      - tank_name
+      - tolerance_pct
     ShiftTemplate:
       type: object
       description: Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`).
@@ -6612,6 +6886,10 @@ components:
           additionalProperties: {}
           nullable: true
           readOnly: true
+        calibration:
+          type: array
+          items:
+            $ref: '#/components/schemas/CalibrationPoint'
         created_at:
           type: string
           format: date-time
@@ -6670,14 +6948,50 @@ components:
       - station
       - updated_at
       - updated_by
+    TankHeight:
+      type: object
+      description: Medición en cm de un tanque al abrir o cerrar la jornada.
+      properties:
+        tank:
+          type: string
+          format: uuid
+        height_cm:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+      required:
+      - height_cm
+      - tank
+    TankHeightRequest:
+      type: object
+      description: Medición en cm de un tanque al abrir o cerrar la jornada.
+      properties:
+        tank:
+          type: string
+          format: uuid
+        height_cm:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+      required:
+      - height_cm
+      - tank
     TankReading:
       type: object
-      description: La estación se toma del tanque; no la envía el cliente.
+      description: 'Medición puntual: se registra la altura en cm y el servidor calcula
+        los litros con el aforo.'
       properties:
         id:
           type: string
           format: uuid
           readOnly: true
+        tank_name:
+          type: string
+          readOnly: true
+        height_cm:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
         created_at:
           type: string
           format: date-time
@@ -6686,6 +7000,12 @@ components:
           type: string
           format: date-time
           readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/TankReadingKindEnum'
+          readOnly: true
+          default: SPOT
+          title: Tipo
         measured_at:
           type: string
           format: date-time
@@ -6694,13 +7014,8 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
           title: Litros
-        height_cm:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
-          nullable: true
-          title: Altura (cm)
         method:
           $ref: '#/components/schemas/TankReadingMethodEnum'
         notes:
@@ -6722,15 +7037,35 @@ components:
         tank:
           type: string
           format: uuid
+        shift:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          title: Jornada
       required:
       - created_at
       - created_by
+      - height_cm
       - id
+      - kind
       - liters
+      - shift
       - station
       - tank
+      - tank_name
       - updated_at
       - updated_by
+    TankReadingKindEnum:
+      enum:
+      - OPENING
+      - CLOSING
+      - SPOT
+      type: string
+      description: |-
+        * `OPENING` - Apertura de jornada
+        * `CLOSING` - Cierre de jornada
+        * `SPOT` - Puntual
     TankReadingMethodEnum:
       enum:
       - STICK
@@ -6743,23 +7078,17 @@ components:
         * `MANUAL` - Manual
     TankReadingRequest:
       type: object
-      description: La estación se toma del tanque; no la envía el cliente.
+      description: 'Medición puntual: se registra la altura en cm y el servidor calcula
+        los litros con el aforo.'
       properties:
-        measured_at:
-          type: string
-          format: date-time
-          title: Fecha de medición
-        liters:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
-          title: Litros
         height_cm:
           type: string
           format: decimal
           pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
-          nullable: true
-          title: Altura (cm)
+        measured_at:
+          type: string
+          format: date-time
+          title: Fecha de medición
         method:
           $ref: '#/components/schemas/TankReadingMethodEnum'
         notes:
@@ -6769,12 +7098,16 @@ components:
           type: string
           format: uuid
       required:
-      - liters
+      - height_cm
       - tank
     TankRequest:
       type: object
       description: Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`).
       properties:
+        calibration:
+          type: array
+          items:
+            $ref: '#/components/schemas/CalibrationPointRequest'
         name:
           type: string
           minLength: 1
