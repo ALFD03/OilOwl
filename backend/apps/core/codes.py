@@ -3,6 +3,8 @@
 - El prefijo de estación son 3 letras mayúsculas definidas al crear la estación (inmutable).
 - El número es correlativo por estación y tipo, nunca se reutiliza (ni al desactivar).
 - El código se asigna al crear el elemento y no se edita.
+- Los catálogos compartidos por todas las estaciones (combustibles) no llevan prefijo de
+  estación: <tipo>-<####> (p. ej. CB-0001), con un correlativo global.
 """
 
 import re
@@ -20,6 +22,7 @@ POS = "PV"
 BIOPAGO = "BP"
 ATTENDANT = "BO"
 SHIFT_TEMPLATE = "TU"
+FUEL = "CB"  # global, sin prefijo de estación
 
 
 def normalize_station_code(value: str) -> str:
@@ -31,15 +34,24 @@ def validate_station_code(value: str) -> None:
         raise ValidationError("El prefijo de la estación debe tener exactamente 3 letras (A-Z).")
 
 
-def format_code(station_code: str, prefix: str, number: int) -> str:
-    return f"{station_code}-{prefix}-{number:04d}"
+def format_code(station_code: str | None, prefix: str, number: int) -> str:
+    return f"{station_code}-{prefix}-{number:04d}" if station_code else f"{prefix}-{number:04d}"
 
 
 def next_code(station_id, prefix: str) -> str:
-    """Reserva el siguiente número bloqueando la fila de la estación (sin carreras entre usuarios)."""
+    """Reserva el siguiente número bloqueando la fila de la estación (sin carreras entre usuarios).
+
+    Sin estación, el correlativo es global y se bloquea la fila de su secuencia.
+    """
     from apps.catalog.models import CodeSequence, Station
 
     with transaction.atomic():
+        if station_id is None:
+            CodeSequence.objects.get_or_create(station=None, prefix=prefix)
+            sequence = CodeSequence.objects.select_for_update().get(station=None, prefix=prefix)
+            sequence.last += 1
+            sequence.save(update_fields=["last"])
+            return format_code(None, prefix, sequence.last)
         station = Station.objects.select_for_update().get(pk=station_id)
         sequence, _ = CodeSequence.objects.get_or_create(station=station, prefix=prefix)
         sequence.last += 1

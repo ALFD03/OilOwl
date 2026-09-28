@@ -8,11 +8,7 @@ import { dateTime, liters, money, nowLocal } from '../../lib/format'
 
 type Row = Record<string, unknown> & { id: string }
 
-const codeName: FieldSpec[] = [
-  { name: 'code', label: 'Código', required: true },
-  { name: 'name', label: 'Nombre', required: true },
-]
-/** Elementos con código automático ESTACIÓN-TIPO-####: solo se pide el nombre. */
+/** Elementos con código automático (ESTACIÓN-TIPO-#### o, si son globales, TIPO-####): solo se pide el nombre. */
 const nameOnly: FieldSpec[] = [{ name: 'name', label: 'Nombre', required: true, span: 2 }]
 const autoCodeNote = (example: string) => `El código se asigna automáticamente al guardar (p. ej. ${example}) y no cambia.`
 const activeField: FieldSpec = { name: 'is_active', label: 'Activo', type: 'checkbox', hideOnCreate: true }
@@ -39,9 +35,9 @@ export const StationsPage = () => (
 export const FuelTypesPage = () => (
   <CrudPage<Row>
     title="Combustibles" singular="combustible" resource={fuelTypes} perm="catalog.fueltype"
-    description="En los gráficos, cada combustible recibe un color fijo de la paleta de la marca."
+    description={`${autoCodeNote('CB-0001')} Es un código global: los combustibles se comparten entre estaciones. En los gráficos, cada combustible recibe un color fijo de la paleta de la marca.`}
     columns={[...baseColumns, activeColumn]}
-    fields={[...codeName, activeField]}
+    fields={[...nameOnly, activeField]}
   />
 )
 

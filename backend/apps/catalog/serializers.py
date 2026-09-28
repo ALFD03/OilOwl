@@ -18,7 +18,7 @@ def catalog_serializer(model_class, extra_fields=None, read_only=()):
     return type(f"{model_class.__name__}Serializer", (BaseModelSerializer,), attrs)
 
 
-FuelTypeSerializer = catalog_serializer(FuelType)
+FuelTypeSerializer = catalog_serializer(FuelType, read_only=("code",))
 
 
 class IslandSerializer(ImmutableOnUpdateMixin, BaseModelSerializer):

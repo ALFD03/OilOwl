@@ -4840,8 +4840,8 @@ components:
           readOnly: true
         code:
           type: string
+          readOnly: true
           title: Código
-          maxLength: 32
         name:
           type: string
           title: Nombre
@@ -4873,11 +4873,6 @@ components:
       description: 'Serializer estándar: los campos de auditoría siempre son de solo
         lectura.'
       properties:
-        code:
-          type: string
-          minLength: 1
-          title: Código
-          maxLength: 32
         name:
           type: string
           minLength: 1
@@ -4891,7 +4886,6 @@ components:
           minLength: 1
           maxLength: 7
       required:
-      - code
       - name
     Island:
       type: object
@@ -5676,11 +5670,6 @@ components:
       description: 'Serializer estándar: los campos de auditoría siempre son de solo
         lectura.'
       properties:
-        code:
-          type: string
-          minLength: 1
-          title: Código
-          maxLength: 32
         name:
           type: string
           minLength: 1

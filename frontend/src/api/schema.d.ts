@@ -1784,7 +1784,7 @@ export interface components {
             /** Format: date-time */
             readonly updated_at: string;
             /** Código */
-            code: string;
+            readonly code: string;
             /** Nombre */
             name: string;
             /** Activo */
@@ -1795,8 +1795,6 @@ export interface components {
         };
         /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
         FuelTypeRequest: {
-            /** Código */
-            code: string;
             /** Nombre */
             name: string;
             /** Activo */
@@ -2142,8 +2140,6 @@ export interface components {
         };
         /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
         PatchedFuelTypeRequest: {
-            /** Código */
-            code?: string;
             /** Nombre */
             name?: string;
             /** Activo */

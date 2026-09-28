@@ -110,7 +110,9 @@ Todo elemento de una estación lleva un código `ESTACIÓN-TIPO-####`, asignado 
 | BioPago | `BP` | `PLN-BP-0001` |
 | Bombero | `BO` | `PLN-BO-0001` |
 | Turno | `TU` | `PLN-TU-0001` |
+| Combustible | `CB` | `CB-0001` |
 
+- Los combustibles se comparten entre estaciones, así que su código no lleva prefijo de estación y su correlativo es global.
 - El prefijo de estación son 3 letras (A-Z) en mayúsculas, definidas al crearla y no editables.
 - El número es correlativo por estación y tipo (`catalog.CodeSequence`, reservado con bloqueo de fila): nunca se reutiliza, ni al desactivar.
 - No se puede mover un elemento a otra estación ni cambiar el tipo de un terminal, porque cambiaría su código.

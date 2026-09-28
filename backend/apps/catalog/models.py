@@ -26,21 +26,35 @@ class Station(CatalogModel):
 
 
 class CodeSequence(models.Model):
-    """Último número asignado por estación y tipo de elemento (nunca retrocede)."""
+    """Último número asignado por estación y tipo de elemento (nunca retrocede).
 
-    station = models.ForeignKey(Station, on_delete=models.CASCADE, related_name="code_sequences")
+    Sin estación es el correlativo global de un catálogo compartido (p. ej. combustibles).
+    """
+
+    station = models.ForeignKey(Station, null=True, blank=True, on_delete=models.CASCADE, related_name="code_sequences")
     prefix = models.CharField(max_length=2)
     last = models.PositiveIntegerField(default=0)
 
     class Meta:
-        constraints = [models.UniqueConstraint(fields=["station", "prefix"], name="uniq_code_sequence")]
+        constraints = [
+            models.UniqueConstraint(fields=["station", "prefix"], name="uniq_code_sequence"),
+            models.UniqueConstraint(
+                fields=["prefix"], condition=models.Q(station__isnull=True), name="uniq_global_code_sequence"
+            ),
+        ]
         default_permissions = ()
 
 
-class FuelType(CatalogModel):
-    """Tipo de combustible (Gasolina 91, 95, Gasoil...)."""
+class FuelType(codes.AutoCodeMixin, CatalogModel):
+    """Tipo de combustible (Gasolina 91, 95, Gasoil...). Código global: CB-0001."""
 
     color = models.CharField(max_length=7, default="#64748b")
+
+    def code_prefix(self):
+        return codes.FUEL
+
+    def code_station_id(self):
+        return None
 
     class Meta(CatalogModel.Meta):
         constraints = [models.UniqueConstraint(fields=["code"], name="uniq_fueltype_code")]
