@@ -5790,6 +5790,13 @@ components:
           items:
             $ref: '#/components/schemas/TankHeightRequest'
           writeOnly: true
+        initials:
+          type: object
+          additionalProperties:
+            type: string
+            format: decimal
+            pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          writeOnly: true
         date:
           type: string
           format: date
@@ -6107,6 +6114,13 @@ components:
         fuel_type_name:
           type: string
           readOnly: true
+        last_final:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          nullable: true
+          readOnly: true
+          description: Lectura final del último cierre (inicial sugerida).
         created_at:
           type: string
           format: date-time
@@ -6161,6 +6175,7 @@ components:
       - fuel_type_name
       - id
       - island
+      - last_final
       - name
       - station
       - updated_at
@@ -6579,6 +6594,13 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TankHeightRequest'
+          writeOnly: true
+        initials:
+          type: object
+          additionalProperties:
+            type: string
+            format: decimal
+            pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
           writeOnly: true
         date:
           type: string

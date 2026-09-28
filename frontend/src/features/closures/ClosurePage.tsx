@@ -9,7 +9,7 @@ import { AlertTriangle, Lock, Save, Send, ShieldCheck, Undo2 } from 'lucide-reac
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
-import { closureAdjustments, closures, denominations, terminals } from '../../api/resources'
+import { attendants, closureAdjustments, closures, denominations, terminals } from '../../api/resources'
 import type { Closure, ClosureLine, MeterReading } from '../../api/types'
 import { Can } from '../../auth/Can'
 import { DataTable } from '../../components/data/DataTable'
@@ -28,6 +28,7 @@ import { date, dateTime, liters, money, rate, signedLiters, signedMoney } from '
 const METHOD_LABEL: Record<string, string> = { CASH_USD: 'Efectivo $', CASH_VES: 'Efectivo Bs', POS: 'Punto de venta', BIOPAGO: 'BioPago' }
 
 interface Draft {
+  attendant: string
   readings: Record<string, { initial: string; final: string }>
   cash: Record<string, number>
   pos: Record<string, TerminalEntry>
@@ -36,7 +37,7 @@ interface Draft {
 }
 
 function draftFrom(closure: Closure): Draft {
-  const draft: Draft = { readings: {}, cash: {}, pos: {}, bio: {}, notes: closure.notes ?? '' }
+  const draft: Draft = { attendant: closure.attendant ?? '', readings: {}, cash: {}, pos: {}, bio: {}, notes: closure.notes ?? '' }
   closure.readings.forEach((r: MeterReading) => {
     draft.readings[r.pump] = { initial: r.initial, final: r.final ?? '' }
   })
@@ -73,6 +74,7 @@ export function ClosureEditor({ id, embedded = false }: { id: string; embedded?:
 
   const denoms = denominations.useAll({ is_active: true })
   const terms = terminals.useAll({ station: closure?.station ?? '', is_active: true }, { enabled: !!closure })
+  const people = attendants.useAll({ station: closure?.station ?? '', is_active: true }, { enabled: !!closure && editable })
   const save = closures.useUpdate()
   const submit = closures.useAction('submit')
   const reopen = closures.useAction<{ reason: string }>('reopen')
@@ -108,6 +110,7 @@ export function ClosureEditor({ id, embedded = false }: { id: string; embedded?:
     addTerminals(draft.pos, 'POS')
     addTerminals(draft.bio, 'BIOPAGO')
     return {
+      attendant: draft.attendant || null,
       notes: draft.notes,
       readings: Object.entries(draft.readings).map(([pump, r]) => ({ pump, initial: r.initial, final: r.final === '' ? null : r.final })),
       lines,
@@ -213,7 +216,13 @@ export function ClosureEditor({ id, embedded = false }: { id: string; embedded?:
           <div>
             <h2 className="font-display text-2xl font-semibold">{closure.island_name}</h2>
             <div className="text-muted mt-1 inline-flex flex-wrap items-center gap-2 text-sm">
-              <StatusBadge value={closure.status} /> {closure.attendant_name ?? 'Sin bombero'}
+              <StatusBadge value={closure.status} />
+              {editable ? (
+                <select className="input w-auto py-1 text-sm" aria-label={`Bombero de ${closure.island_name}`} value={draft.attendant} onChange={(e) => setDraft({ ...draft, attendant: e.target.value })}>
+                  <option value="">— Sin bombero —</option>
+                  {people.data?.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              ) : (closure.attendant_name ?? 'Sin bombero')}
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">{actions}</div>

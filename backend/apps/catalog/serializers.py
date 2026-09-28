@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.core import codes
@@ -66,8 +67,16 @@ class PaymentTerminalSerializer(ImmutableOnUpdateMixin, BaseModelSerializer):
 class PumpSerializer(ImmutableOnUpdateMixin, BaseModelSerializer):
     station = serializers.UUIDField(source="island.station_id", read_only=True)
     fuel_type_name = serializers.CharField(source="fuel_type.name", read_only=True)
+    last_final = serializers.SerializerMethodField(help_text="Lectura final del último cierre (inicial sugerida).")
     # La isla fija la estación del código: no se mueve un surtidor a otra isla.
     immutable_fields = ("island",)
+
+    @extend_schema_field(serializers.DecimalField(max_digits=14, decimal_places=3, allow_null=True))
+    def get_last_final(self, obj):
+        from apps.closures.services import last_final_reading
+
+        value = last_final_reading(obj)
+        return None if value is None else str(value)
 
     class Meta:
         model = Pump

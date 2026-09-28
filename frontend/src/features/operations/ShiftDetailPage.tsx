@@ -147,7 +147,7 @@ function TanksSection({ shift, tanks, loading, deliveryList }: { shift: Shift; t
   const [receiving, setReceiving] = useState(false)
   const open = shift.status === 'DRAFT'
   return (
-    <section id="tanques" className="scroll-mt-6 space-y-4">
+    <section id="tanques" className="scroll-mt-36 space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="font-display text-2xl font-semibold">Tanques, recepción y merma</h2>
@@ -314,7 +314,7 @@ export function ShiftDetailPage() {
 
   return (
     <div className="space-y-8">
-      <div>
+      <div id="resumen" className="scroll-mt-36">
         <PageHeader
           title={`Jornada ${date(s.date)}${s.shift_name ? ` · ${s.shift_name}` : ''}`}
           description={<>Tasa congelada: <strong>{rate(s.rate)} Bs/$</strong> · <StatusBadge value={s.status} /></>}
@@ -353,23 +353,24 @@ export function ShiftDetailPage() {
         </div>
       </div>
 
-      {/* Acceso rápido a cada isla y a los tanques */}
-      <nav className="flex flex-wrap gap-2" aria-label="Secciones de la jornada">
+      {/* Acceso rápido a cada isla y a los tanques: fijo bajo la cabecera mientras se desplaza */}
+      <nav className="border-base sticky top-[4.25rem] z-20 -mx-2 flex items-center gap-2 overflow-x-auto rounded-2xl border bg-[var(--surface)] px-2 py-2 shadow-[var(--shadow-lg)]" aria-label="Secciones de la jornada">
+        <a href="#resumen" className="btn-ghost shrink-0 py-1.5 text-sm whitespace-nowrap">Resumen</a>
         {islandRows.map((island) => {
           const closure = byIsland.get(island.id)
           return (
-            <a key={island.id} href={`#isla-${island.id}`} className="btn-secondary py-1.5 text-sm">
+            <a key={island.id} href={`#isla-${island.id}`} className="btn-secondary shrink-0 py-1.5 text-sm whitespace-nowrap">
               {island.name} {closure ? <StatusBadge value={closure.status} /> : <span className="text-muted text-xs">Sin abrir</span>}
             </a>
           )
         })}
-        <a href="#tanques" className="btn-secondary py-1.5 text-sm">Tanques y merma</a>
+        <a href="#tanques" className="btn-secondary shrink-0 py-1.5 text-sm whitespace-nowrap"><Truck className="size-4" /> Tanques y merma</a>
       </nav>
 
       {islandList.isLoading || closureList.isLoading ? <Spinner /> : islandRows.map((island) => {
         const closure = byIsland.get(island.id)
         return (
-          <section key={island.id} id={`isla-${island.id}`} className={cn('scroll-mt-6', closure && 'border-base border-t pt-6')}>
+          <section key={island.id} id={`isla-${island.id}`} className={cn('scroll-mt-36', closure && 'border-base border-t pt-6')}>
             {closure ? (
               <ClosureEditor id={closure.id} embedded />
             ) : s.status === 'DRAFT' ? (

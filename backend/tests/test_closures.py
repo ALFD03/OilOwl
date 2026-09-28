@@ -26,25 +26,21 @@ OPERATOR_PERMS = [
 SUPERVISOR_PERMS = OPERATOR_PERMS + ["closures.lock_closure", "closures.verify_chain", "operations.close_shift"]
 
 
-def open_and_fill(client, world, final_p1="1100", final_p2="2050"):
-    """Abre la isla (P1 inicia en 1000, P2 en 2000) y registra finales y arqueo."""
-    shift = client.post(
-        "/api/shifts",
-        {"station": str(world["station"].pk), "date": str(date.today()), "tank_readings": tank_heights(world)},
-        format="json",
-    )
+def open_shift(client, world, initials=("1000", "2000"), **extra):
+    """Abre la jornada (con la medición de tanques); la isla se abre sola. Devuelve el cierre de la isla."""
+    body = {"station": str(world["station"].pk), "date": str(date.today()), "tank_readings": tank_heights(world)}
+    if initials:
+        body["initials"] = {str(world["p1"].pk): initials[0], str(world["p2"].pk): initials[1]}
+    shift = client.post("/api/shifts", {**body, **extra}, format="json")
     assert shift.status_code == 201, shift.data
-    closure = client.post(
-        "/api/closures",
-        {
-            "shift": shift.data["id"],
-            "island": str(world["island"].pk),
-            "attendant": str(world["attendant"].pk),
-            "initials": {str(world["p1"].pk): "1000", str(world["p2"].pk): "2000"},
-        },
-        format="json",
-    )
-    assert closure.status_code == 201, closure.data
+    closures = client.get("/api/closures", {"shift": shift.data["id"]}).data["results"]
+    assert [str(c["island"]) for c in closures] == [str(world["island"].pk)]
+    return client.get(f"/api/closures/{closures[0]['id']}").data
+
+
+def open_and_fill(client, world, final_p1="1100", final_p2="2050"):
+    """Abre la jornada (P1 inicia en 1000, P2 en 2000) y registra finales y arqueo de la isla."""
+    closure = open_shift(client, world)
     # Ventas: (100 + 50) L × 0.50 $ = 75 $ = 7.500 Bs a tasa 100.
     lines = [
         {"method": "CASH_USD", "denomination": str(world["usd20"].pk), "quantity": 2},  # 40 $
@@ -54,8 +50,9 @@ def open_and_fill(client, world, final_p1="1100", final_p2="2050"):
         {"method": "BIOPAGO", "terminal": str(world["bio"].pk), "amount": "400.00"},
     ]  # total = 45 $ + 2.900 Bs = 45 $ + 29 $ = 74 $ → faltante de 1 $
     response = client.patch(
-        f"/api/closures/{closure.data['id']}",
+        f"/api/closures/{closure['id']}",
         {
+            "attendant": str(world["attendant"].pk),
             "readings": [
                 {"pump": str(world["p1"].pk), "final": final_p1},
                 {"pump": str(world["p2"].pk), "final": final_p2},
@@ -122,21 +119,8 @@ def test_other_station_is_invisible(world, other_station, make_user, client_for)
 
 def test_submit_requires_final_readings(world, make_user, client_for):
     client = client_for(make_user(stations=[world["station"]], perms=SUPERVISOR_PERMS))
-    shift = client.post(
-        "/api/shifts",
-        {"station": str(world["station"].pk), "date": str(date.today()), "tank_readings": tank_heights(world)},
-        format="json",
-    )
-    closure = client.post(
-        "/api/closures",
-        {
-            "shift": shift.data["id"],
-            "island": str(world["island"].pk),
-            "initials": {str(world["p1"].pk): "1", str(world["p2"].pk): "1"},
-        },
-        format="json",
-    )
-    response = client.post(f"/api/closures/{closure.data['id']}/submit")
+    closure = open_shift(client, world, initials=("1", "1"))
+    response = client.post(f"/api/closures/{closure['id']}/submit")
     assert response.status_code == 400
     assert response.data["error"]["code"] == "business_rule"
 
@@ -217,21 +201,26 @@ def test_next_closure_suggests_previous_final(world, admin, client_for):
     night = ShiftTemplate.objects.create(
         station=world["station"], code="N", name="Noche", start_time="18:00", end_time="06:00"
     )
-    shift2 = client.post(
+    from apps.scheduling.models import Assignment
+
+    Assignment.objects.create(
+        date=date.today(), shift_template=night, island=world["island"], attendant=world["attendant"]
+    )
+    # Sin lecturas iniciales: la isla se abre sola con las finales del cierre anterior y el bombero del horario.
+    closure2 = open_shift(client, world, initials=None, shift_template=str(night.pk))
+    initials = {str(r["pump"]): Decimal(r["initial"]) for r in closure2["readings"]}
+    assert initials[str(world["p1"].pk)] == Decimal("1100")
+    assert all(not r["has_gap"] for r in closure2["readings"])
+    assert str(closure2["attendant"]) == str(world["attendant"].pk)
+    assert MeterReading.objects.filter(is_locked=True).count() == 2
+
+
+def test_shift_needs_initials_for_pumps_without_history(world, admin, client_for):
+    response = client_for(admin).post(
         "/api/shifts",
-        {
-            "station": str(world["station"].pk),
-            "date": str(date.today()),
-            "shift_template": str(night.pk),
-            "tank_readings": tank_heights(world, "99"),
-        },
+        {"station": str(world["station"].pk), "date": str(date.today()), "tank_readings": tank_heights(world)},
         format="json",
     )
-    closure2 = client.post(
-        "/api/closures", {"shift": shift2.data["id"], "island": str(world["island"].pk)}, format="json"
-    )
-    assert closure2.status_code == 201, closure2.data
-    initials = {str(r["pump"]): Decimal(r["initial"]) for r in closure2.data["readings"]}
-    assert initials[str(world["p1"].pk)] == Decimal("1100")
-    assert all(not r["has_gap"] for r in closure2.data["readings"])
-    assert MeterReading.objects.filter(is_locked=True).count() == 2
+    assert response.status_code == 400
+    assert world["p1"].code in response.data["error"]["message"]
+    assert not Shift.objects.exists()  # nada queda a medias: ni jornada ni mediciones

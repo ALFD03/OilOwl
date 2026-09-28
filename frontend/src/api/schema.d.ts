@@ -2214,6 +2214,9 @@ export interface components {
             /** Format: decimal */
             rate?: string | null;
             tank_readings?: components["schemas"]["TankHeightRequest"][];
+            initials?: {
+                [key: string]: string;
+            };
             /**
              * Fecha
              * Format: date
@@ -2399,6 +2402,11 @@ export interface components {
             /** Format: uuid */
             readonly station: string;
             readonly fuel_type_name: string;
+            /**
+             * Format: decimal
+             * @description Lectura final del último cierre (inicial sugerida).
+             */
+            readonly last_final: string | null;
             /** Format: date-time */
             readonly created_at: string;
             /** Format: date-time */
@@ -2629,6 +2637,9 @@ export interface components {
             /** Format: decimal */
             rate?: string | null;
             tank_readings?: components["schemas"]["TankHeightRequest"][];
+            initials?: {
+                [key: string]: string;
+            };
             /**
              * Fecha
              * Format: date

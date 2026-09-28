@@ -37,11 +37,15 @@ class ShiftViewSet(BaseModelViewSet):
 
             raise BusinessRuleError("El turno pertenece a otra estación.")
         rate, reference = services.resolve_rate(data["date"], data.get("rate"), self.request.user)
+        from apps.closures.services import open_all_islands
+
         tank_readings = data.pop("tank_readings", [])
+        initials = data.pop("initials", {})
         with transaction.atomic():
             instance = serializer.save(rate=rate, exchange_rate=reference)
             audit.record("create", instance, after=audit.snapshot(instance))
             inventory.record_shift_readings(instance, TankReading.Kind.OPENING, tank_readings)
+            open_all_islands(instance, initials)
 
     @extend_schema(request=SetRateSerializer, responses=ShiftSerializer)
     @action(detail=True, methods=["post"], url_path="set-rate")

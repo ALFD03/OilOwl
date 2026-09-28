@@ -117,6 +117,34 @@ def open_closure(shift, island: Island, attendant: Attendant | None = None, init
     return closure
 
 
+def suggested_attendant(shift, island: Island) -> Attendant | None:
+    """Bombero asignado a la isla en el horario del día (y del turno de la jornada, si tiene)."""
+    from apps.scheduling.models import Assignment
+
+    assignments = Assignment.objects.filter(date=shift.date, island=island, attendant__is_active=True)
+    if shift.shift_template_id:
+        assignments = assignments.filter(shift_template_id=shift.shift_template_id)
+    assignment = assignments.select_related("attendant").first()
+    return assignment.attendant if assignment else None
+
+
+@transaction.atomic
+def open_all_islands(shift, initials: dict | None = None) -> list[Closure]:
+    """Abre todas las islas activas (con surtidores activos) que aún no tienen cierre en la jornada.
+
+    Las lecturas iniciales se toman del cierre anterior de cada surtidor; `initials` solo hace
+    falta para los surtidores sin historial (o para corregir alguno).
+    """
+    opened = shift.closures.values_list("island_id", flat=True)
+    islands = (
+        Island.objects.filter(station_id=shift.station_id, is_active=True, pumps__is_active=True)
+        .exclude(pk__in=opened)
+        .distinct()
+        .order_by("code")
+    )
+    return [open_closure(shift, island, suggested_attendant(shift, island), initials) for island in islands]
+
+
 # ----------------------------------------------------------------------------- borrador
 
 

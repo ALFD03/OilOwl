@@ -1,8 +1,9 @@
 import { Plus } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import { exchangeRates, shiftTemplates, shifts, tanks } from '../../api/resources'
+import { exchangeRates, islands, pumps, shiftTemplates, shifts, tanks } from '../../api/resources'
 import type { Shift } from '../../api/types'
 import { Can } from '../../auth/Can'
 import { usePermission } from '../../auth/AuthContext'
@@ -29,11 +30,20 @@ export function ShiftsPage() {
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState({ date: today(), shift_template: '', rate: '', notes: '' })
   const [heights, setHeights] = useState<TankHeights>({})
+  const [initials, setInitials] = useState<Record<string, string>>({})
+  const queryClient = useQueryClient()
   const tankList = tanks.useAll({ station: stationId, is_active: true }, { enabled: !!stationId && open })
+  const islandList = islands.useAll({ station: stationId, is_active: true }, { enabled: !!stationId && open })
+  const pumpList = pumps.useAll({ station: stationId, is_active: true }, { enabled: !!stationId && open })
 
   const latest = current.data?.results[0]
   const tankRows: TankHeightRow[] = (tankList.data ?? []).map((t) => ({ id: t.id, code: t.code, name: t.name, fuel: t.fuel_type_name, calibration: t.calibration }))
   const tanksReady = !tankList.isLoading && tankHeightsComplete(tankRows, heights)
+  // Todas las islas activas se abren con la jornada. Solo los surtidores sin cierre anterior
+  // necesitan lectura inicial; los demás toman la final del último cierre.
+  const activeIslands = (islandList.data ?? []).filter((i) => pumpList.data?.some((p) => p.island === i.id))
+  const newPumps = (pumpList.data ?? []).filter((p) => p.last_final === null && activeIslands.some((i) => i.id === p.island))
+  const initialsReady = !pumpList.isLoading && newPumps.every((p) => initials[p.id] !== undefined && initials[p.id] !== '' && Number(initials[p.id]) >= 0)
 
   const submit = async () => {
     try {
@@ -43,6 +53,7 @@ export function ShiftsPage() {
         shift_template: form.shift_template || null,
         notes: form.notes,
         tank_readings: toTankReadings(tankRows, heights),
+        initials: Object.fromEntries(newPumps.map((p) => [p.id, initials[p.id]])),
         ...(form.rate ? { rate: form.rate } : {}),
       } as Partial<Shift>)
       setOpen(false)
@@ -56,8 +67,8 @@ export function ShiftsPage() {
     <div>
       <PageHeader
         title="Jornadas"
-        description="Abra la jornada con la medición de los tanques en cm: se congela la tasa del día y luego se registran todas las islas en la misma página."
-        actions={<Can perm="operations.add_shift"><button className="btn-primary" onClick={() => { create.reset(); setHeights({}); setOpen(true) }}><Plus className="size-4" /> Abrir jornada</button></Can>}
+        description="Abra la jornada con la medición de los tanques en cm: se congela la tasa del día y se abren todas las islas, que se registran en la misma página."
+        actions={<Can perm="operations.add_shift"><button className="btn-primary" onClick={() => { create.reset(); setHeights({}); setInitials({}); queryClient.invalidateQueries({ queryKey: pumps.key }); setOpen(true) }}><Plus className="size-4" /> Abrir jornada</button></Can>}
       />
       <DataTable<Shift>
         rows={list.data?.results}
@@ -103,10 +114,29 @@ export function ShiftsPage() {
             <p className="text-muted mb-2 text-xs">Altura en centímetros; los litros salen de la tabla de aforo de cada tanque.</p>
             <TankHeightInputs rows={tankRows} values={heights} onChange={setHeights} />
           </div>
+          <div>
+            <span className="label">Islas</span>
+            <p className="text-muted mb-2 text-xs">
+              {activeIslands.length
+                ? <>Se abrirán automáticamente: <strong className="text-soft">{activeIslands.map((i) => i.name).join(', ')}</strong>. Las lecturas iniciales se toman del cierre anterior y el bombero, del horario; ambos se pueden corregir en la jornada.</>
+                : 'La estación no tiene islas activas con surtidores.'}
+            </p>
+            {newPumps.length > 0 && (
+              <div className="border-base space-y-2 rounded-xl border p-3">
+                <p className="text-xs text-warning">Estos surtidores no tienen cierre anterior: indique su lectura inicial.</p>
+                {newPumps.map((p) => (
+                  <label key={p.id} className="grid grid-cols-[1fr_10rem] items-center gap-2 text-sm">
+                    <span>{p.code} · {p.fuel_type_name} <span className="text-muted">({activeIslands.find((i) => i.id === p.island)?.name})</span></span>
+                    <input className="input py-1 text-right tabular-nums" type="number" step="0.001" min={0} aria-label={`Lectura inicial ${p.code}`} value={initials[p.id] ?? ''} onChange={(e) => setInitials({ ...initials, [p.id]: e.target.value })} />
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
           <ErrorAlert error={create.error} />
           <ModalActions>
             <button className="btn-secondary" onClick={() => setOpen(false)}>Cancelar</button>
-            <button className="btn-primary" disabled={create.isPending || !tanksReady || (form.rate !== '' && !(Number(form.rate) > 0))} title={tanksReady ? '' : 'Indique la medición en cm de cada tanque'} onClick={submit}>Abrir</button>
+            <button className="btn-primary" disabled={create.isPending || !tanksReady || !initialsReady || (form.rate !== '' && !(Number(form.rate) > 0))} title={!tanksReady ? 'Indique la medición en cm de cada tanque' : !initialsReady ? 'Indique las lecturas iniciales pendientes' : ''} onClick={submit}>Abrir jornada</button>
           </ModalActions>
         </div>
       </Modal>
