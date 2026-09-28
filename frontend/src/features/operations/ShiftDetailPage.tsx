@@ -1,13 +1,14 @@
 /**
  * Detalle de la jornada: todo se registra en una sola página.
  *   1. Medición inicial de tanques (al abrir la jornada).
- *   2. Cada isla con su cierre completo (lecturas, arqueo y cuadre), una debajo de otra.
+ *   2. Cada isla con su cierre completo (lecturas, arqueo y cuadre), una debajo de otra. Guardar,
+ *      enviar y bloquear son acciones de la jornada: actúan sobre todas las islas a la vez.
  *   3. Recepción de combustible durante la jornada.
  *   4. Cierre de jornada: medición final de tanques → conciliación y merma.
  */
-import { useQuery } from '@tanstack/react-query'
-import { DollarSign, Fuel, Lock, PlayCircle, RefreshCw, Scale, Truck } from 'lucide-react'
-import { useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { DollarSign, Fuel, Lock, PlayCircle, RefreshCw, Save, Scale, Send, Truck } from 'lucide-react'
+import { useCallback, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 
 import { api } from '../../api/client'
@@ -20,14 +21,14 @@ import { TankHeightInputs, type TankHeightRow } from '../../components/inventory
 import { Alert, ErrorAlert } from '../../components/ui/Alert'
 import { Badge, StatusBadge } from '../../components/ui/Badge'
 import { Field } from '../../components/ui/Field'
-import { Modal, ModalActions } from '../../components/ui/Modal'
+import { ConfirmModal, Modal, ModalActions } from '../../components/ui/Modal'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { Spinner } from '../../components/ui/Spinner'
 import { StatCard } from '../../components/ui/StatCard'
 import { cn } from '../../lib/cn'
 import { date, dateTime, liters, money, nowLocal, rate, signedLiters, signedMoney, time } from '../../lib/format'
 import { tankHeightsComplete, toTankReadings, type TankHeights } from '../../lib/tankMath'
-import { ClosureEditor } from '../closures/ClosurePage'
+import { ClosureEditor, type IslandDraftHandle } from '../closures/ClosurePage'
 
 /** Inventario de la jornada. La clave incluye una firma de cierres y recepciones para refrescarse con ellos. */
 function useShiftTanks(id: string, signature: string) {
@@ -245,6 +246,123 @@ function CloseShiftModal({ shift, tanks, onClose, onClosed }: { shift: Shift; ta
   )
 }
 
+// ----------------------------------------------------------------------------- acciones de todas las islas
+
+type BulkStep = 'save' | 'submit' | 'lock'
+
+/**
+ * Guardar, enviar y bloquear actúan sobre todas las islas de la jornada a la vez. Cada isla en
+ * borrador registra su estado local (`IslandDraftHandle`) para poder guardarse antes de enviar.
+ */
+function IslandsActions({ shift, closureRows, handles }: { shift: Shift; closureRows: ClosureListItem[]; handles: { current: Map<string, IslandDraftHandle> } }) {
+  const queryClient = useQueryClient()
+  const submitAll = shifts.useAction('submit-closures')
+  const lockAll = shifts.useAction('lock-closures')
+  const [confirm, setConfirm] = useState<{ step: BulkStep; islands: IslandDraftHandle[] } | null>(null)
+  const [busy, setBusy] = useState<BulkStep | null>(null)
+  const [error, setError] = useState<unknown>(null)
+  const [saved, setSaved] = useState(false)
+
+  const drafts = closureRows.filter((c) => c.status === 'DRAFT')
+  const submitted = closureRows.filter((c) => c.status === 'SUBMITTED')
+  if (shift.status !== 'DRAFT' || (!drafts.length && !submitted.length)) return null
+
+  const refresh = () => queryClient.invalidateQueries({ queryKey: closures.key })
+  const saveAll = async () => {
+    for (const handle of handles.current.values()) await handle.save()
+  }
+  const run = async (step: BulkStep) => {
+    setBusy(step)
+    setError(null)
+    setSaved(false)
+    try {
+      if (step !== 'lock') await saveAll()
+      if (step === 'submit') await submitAll.mutateAsync({ id: shift.id })
+      if (step === 'lock') await lockAll.mutateAsync({ id: shift.id })
+      if (step === 'save') setSaved(true)
+      setConfirm(null)
+    } catch (e) {
+      setError(e)
+      setConfirm(null)
+    } finally {
+      await refresh()
+      setBusy(null)
+    }
+  }
+  const snapshot = () => [...handles.current.values()]
+  const missing = (islands: IslandDraftHandle[]) => islands.filter((h) => h.missingFinals)
+
+  return (
+    <>
+      <div className="ml-auto flex shrink-0 items-center gap-2 pl-2">
+        {saved && !busy && <span className="text-positive text-xs whitespace-nowrap">Guardado</span>}
+        {drafts.length > 0 && (
+          <>
+            <Can perm="closures.change_closure">
+              <button className="btn-secondary shrink-0 py-1.5 text-sm whitespace-nowrap" disabled={!!busy} onClick={() => run('save')}>
+                <Save className="size-4" /> {busy === 'save' ? 'Guardando…' : 'Guardar'}
+              </button>
+            </Can>
+            <Can perm="closures.submit_closure">
+              <button className="btn-primary shrink-0 py-1.5 text-sm whitespace-nowrap" disabled={!!busy} onClick={() => { setError(null); setConfirm({ step: 'submit', islands: snapshot() }) }}>
+                <Send className="size-4" /> Enviar islas ({drafts.length})
+              </button>
+            </Can>
+          </>
+        )}
+        {!drafts.length && submitted.length > 0 && (
+          <Can perm="closures.lock_closure">
+            <button className="btn-primary shrink-0 py-1.5 text-sm whitespace-nowrap" disabled={!!busy} onClick={() => { setError(null); setConfirm({ step: 'lock', islands: [] }) }}>
+              <Lock className="size-4" /> Bloquear islas ({submitted.length})
+            </button>
+          </Can>
+        )}
+      </div>
+
+      {error !== null && (
+        <Modal open title="No se pudo completar" onClose={() => setError(null)} size="sm">
+          <div className="space-y-4">
+            <ErrorAlert error={error} />
+            <ModalActions><button className="btn-primary" onClick={() => setError(null)}>Entendido</button></ModalActions>
+          </div>
+        </Modal>
+      )}
+
+      <ConfirmModal
+        open={confirm?.step === 'submit'} title="Enviar todas las islas" confirmLabel="Guardar y enviar"
+        busy={busy === 'submit' || (confirm !== null && missing(confirm.islands).length > 0)}
+        onClose={() => setConfirm(null)} onConfirm={() => run('submit')}
+        message="Se guardarán y enviarán a revisión todas las islas juntas. Ya no podrán editarse salvo que un supervisor devuelva alguna."
+      >
+        {confirm?.step === 'submit' && (
+          <div className="space-y-2">
+            <table className="table-base">
+              <tbody>
+                {confirm.islands.map((h) => (
+                  <tr key={h.island}>
+                    <td>{h.island}</td>
+                    <td className="num">
+                      {h.missingFinals
+                        ? <span className="text-warning">Faltan lecturas finales</span>
+                        : <span className={h.diffUsd < 0 ? 'text-negative' : h.diffUsd > 0 ? 'text-info' : 'text-positive'}>{signedMoney(h.diffUsd)}</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {missing(confirm.islands).length > 0 && <Alert tone="warning">Complete las lecturas finales de todas las islas para poder enviarlas.</Alert>}
+          </div>
+        )}
+      </ConfirmModal>
+      <ConfirmModal
+        open={confirm?.step === 'lock'} title="Bloquear todas las islas" confirmLabel="Bloquear definitivamente" danger
+        busy={busy === 'lock'} onClose={() => setConfirm(null)} onConfirm={() => run('lock')}
+        message={`Se sellarán criptográficamente las ${submitted.length} islas enviadas y ya no podrán modificarse ni eliminarse. Las correcciones posteriores se registran como ajustes.`}
+      />
+    </>
+  )
+}
+
 /** Corrige la tasa de una jornada abierta: BCV vigente o tasa manual (con permiso). */
 function SetRateModal({ shift, onClose }: { shift: Shift; onClose: () => void }) {
   const canOverride = usePermission('rates.override_rate')
@@ -296,6 +414,12 @@ export function ShiftDetailPage() {
   const tanks = useShiftTanks(id, signature)
   const [closing, setClosing] = useState(false)
   const [changingRate, setChangingRate] = useState(false)
+  // Borradores de las islas, para guardarlos y enviarlos todos juntos.
+  const handles = useRef(new Map<string, IslandDraftHandle>())
+  const register = useCallback((closureId: string, handle: IslandDraftHandle | null) => {
+    if (handle) handles.current.set(closureId, handle)
+    else handles.current.delete(closureId)
+  }, [])
 
   if (shift.isLoading || !shift.data) return shift.error ? <ErrorAlert error={shift.error} /> : <Spinner full />
   const s = shift.data
@@ -365,6 +489,7 @@ export function ShiftDetailPage() {
           )
         })}
         <a href="#tanques" className="btn-secondary shrink-0 py-1.5 text-sm whitespace-nowrap"><Truck className="size-4" /> Tanques y merma</a>
+        <IslandsActions shift={s} closureRows={closureRows} handles={handles} />
       </nav>
 
       {islandList.isLoading || closureList.isLoading ? <Spinner /> : islandRows.map((island) => {
@@ -372,7 +497,7 @@ export function ShiftDetailPage() {
         return (
           <section key={island.id} id={`isla-${island.id}`} className={cn('scroll-mt-36', closure && 'border-base border-t pt-6')}>
             {closure ? (
-              <ClosureEditor id={closure.id} embedded />
+              <ClosureEditor id={closure.id} embedded onRegister={register} />
             ) : s.status === 'DRAFT' ? (
               <Can perm="closures.add_closure" fallback={<p className="text-muted text-sm">{island.name}: sin abrir.</p>}>
                 <OpenIslandCard shift={s} island={island} />

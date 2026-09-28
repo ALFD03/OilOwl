@@ -224,3 +224,60 @@ def test_shift_needs_initials_for_pumps_without_history(world, admin, client_for
     assert response.status_code == 400
     assert world["p1"].code in response.data["error"]["message"]
     assert not Shift.objects.exists()  # nada queda a medias: ni jornada ni mediciones
+
+
+def _second_island(world):
+    from apps.catalog.models import Island, Pump
+
+    island = Island.objects.create(station=world["station"], name="Isla 2")
+    pump = Pump.objects.create(island=island, fuel_type=world["g91"], tank=world["tank"], name="Surtidor 3")
+    return island, pump
+
+
+def test_islands_are_submitted_and_locked_together(world, make_user, client_for):
+    _, p3 = _second_island(world)
+    client = client_for(make_user(stations=[world["station"]], perms=SUPERVISOR_PERMS))
+    shift = client.post(
+        "/api/shifts",
+        {
+            "station": str(world["station"].pk),
+            "date": str(date.today()),
+            "tank_readings": tank_heights(world),
+            "initials": {str(world["p1"].pk): "1000", str(world["p2"].pk): "2000", str(p3.pk): "500"},
+        },
+        format="json",
+    ).data
+    closures = {c.island_id: c for c in Closure.objects.filter(shift_id=shift["id"])}
+    assert len(closures) == 2
+    first = closures[world["island"].pk]
+    second = next(c for c in closures.values() if c.pk != first.pk)
+    client.patch(
+        f"/api/closures/{first.pk}",
+        {"readings": [{"pump": str(world["p1"].pk), "final": "1010"}, {"pump": str(world["p2"].pk), "final": "2010"}]},
+        format="json",
+    )
+
+    # A la Isla 2 le falta la lectura final: no se envía ninguna.
+    response = client.post(f"/api/shifts/{shift['id']}/submit-closures")
+    assert response.status_code == 400
+    assert "Isla 2" in response.data["error"]["message"]
+    assert set(Closure.objects.values_list("status", flat=True)) == {"DRAFT"}
+    # Tampoco se puede bloquear mientras haya islas en borrador.
+    assert client.post(f"/api/shifts/{shift['id']}/lock-closures").status_code == 400
+
+    client.patch(f"/api/closures/{second.pk}", {"readings": [{"pump": str(p3.pk), "final": "510"}]}, format="json")
+    assert client.post(f"/api/shifts/{shift['id']}/submit-closures").status_code == 200
+    assert set(Closure.objects.values_list("status", flat=True)) == {"SUBMITTED"}
+
+    assert client.post(f"/api/shifts/{shift['id']}/lock-closures").status_code == 200
+    locked = Closure.objects.order_by("chain_seq")
+    assert [c.status for c in locked] == ["LOCKED", "LOCKED"]
+    assert [c.chain_seq for c in locked] == [1, 2]
+    assert services.verify_chain(world["station"].pk)["valid"] is True
+
+
+def test_bulk_lock_requires_permission(world, make_user, client_for):
+    client = client_for(make_user(stations=[world["station"]], perms=OPERATOR_PERMS))
+    closure = open_and_fill(client, world)
+    assert client.post(f"/api/shifts/{closure['shift']}/submit-closures").status_code == 200
+    assert client.post(f"/api/shifts/{closure['shift']}/lock-closures").status_code == 403

@@ -25,6 +25,8 @@ class ShiftViewSet(BaseModelViewSet):
         "close": "operations.close_shift",
         "set_rate": "operations.change_shift",
         "tanks": "operations.view_shift",
+        "submit_closures": "closures.submit_closure",
+        "lock_closures": "closures.lock_closure",
     }
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
@@ -61,6 +63,26 @@ class ShiftViewSet(BaseModelViewSet):
         data = CloseShiftSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         shift = services.close_shift(self.get_object(), request.user, data.validated_data.get("tank_readings", []))
+        return Response(ShiftSerializer(shift, context=self.get_serializer_context()).data)
+
+    @extend_schema(request=None, responses=ShiftSerializer)
+    @action(detail=True, methods=["post"], url_path="submit-closures")
+    def submit_closures(self, request, pk=None):
+        """Envía a revisión todas las islas en borrador de la jornada (todas o ninguna)."""
+        from apps.closures.services import submit_all
+
+        shift = self.get_object()
+        submit_all(shift, request.user)
+        return Response(ShiftSerializer(shift, context=self.get_serializer_context()).data)
+
+    @extend_schema(request=None, responses=ShiftSerializer)
+    @action(detail=True, methods=["post"], url_path="lock-closures")
+    def lock_closures(self, request, pk=None):
+        """Bloquea todas las islas enviadas de la jornada (todas o ninguna)."""
+        from apps.closures.services import lock_all
+
+        shift = self.get_object()
+        lock_all(shift, request.user)
         return Response(ShiftSerializer(shift, context=self.get_serializer_context()).data)
 
     @extend_schema(responses=ShiftTankSerializer(many=True))

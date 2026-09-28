@@ -301,6 +301,39 @@ def reopen(closure: Closure, user, reason: str) -> Closure:
     return closure
 
 
+@transaction.atomic
+def submit_all(shift, user) -> list[Closure]:
+    """Envía juntas todas las islas en borrador de la jornada: todas o ninguna."""
+    if shift.status != LockStatus.DRAFT:
+        raise InvalidStateError("La jornada está cerrada.")
+    closures = list(shift.closures.filter(status=LockStatus.DRAFT).select_related("island").order_by("island__code"))
+    if not closures:
+        raise BusinessRuleError("No hay islas en borrador para enviar.")
+    missing = [
+        f"{closure.island.name} ({reading.pump.code})"
+        for closure in closures
+        for reading in closure.readings.select_related("pump").order_by("pump__code")
+        if reading.final is None
+    ]
+    if missing:
+        raise BusinessRuleError(f"Faltan lecturas finales: {', '.join(missing)}")
+    return [submit(closure, user) for closure in closures]
+
+
+@transaction.atomic
+def lock_all(shift, user) -> list[Closure]:
+    """Bloquea juntas todas las islas enviadas de la jornada, en orden de isla. Exige que ninguna esté en borrador."""
+    if shift.status != LockStatus.DRAFT:
+        raise InvalidStateError("La jornada está cerrada.")
+    pending = shift.closures.exclude(status=LockStatus.LOCKED).select_related("island").order_by("island__code")
+    drafts = [c.island.name for c in pending if c.status == LockStatus.DRAFT]
+    if drafts:
+        raise BusinessRuleError(f"Envíe primero todas las islas. En borrador: {', '.join(drafts)}.")
+    if not pending:
+        raise BusinessRuleError("No hay islas enviadas para bloquear.")
+    return [lock(closure, user) for closure in pending]
+
+
 def build_snapshot(closure: Closure) -> dict:
     """Representación canónica de todo lo que el hash protege."""
     return {

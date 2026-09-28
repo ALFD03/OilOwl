@@ -948,6 +948,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/shifts/{id}/lock-closures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Bloquea todas las islas enviadas de la jornada (todas o ninguna). */
+        post: operations["shifts_lock_closures_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/shifts/{id}/set-rate": {
         parameters: {
             query?: never;
@@ -959,6 +976,23 @@ export interface paths {
         put?: never;
         /** @description CRUD completo estándar. Los catálogos se desactivan en lugar de borrarse. */
         post: operations["shifts_set_rate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/shifts/{id}/submit-closures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Envía a revisión todas las islas en borrador de la jornada (todas o ninguna). */
+        post: operations["shifts_submit_closures_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5350,6 +5384,28 @@ export interface operations {
             };
         };
     };
+    shifts_lock_closures_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este shift. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Shift"];
+                };
+            };
+        };
+    };
     shifts_set_rate_create: {
         parameters: {
             query?: never;
@@ -5365,6 +5421,28 @@ export interface operations {
                 "application/json": components["schemas"]["SetRateRequest"];
             };
         };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Shift"];
+                };
+            };
+        };
+    };
+    shifts_submit_closures_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este shift. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {

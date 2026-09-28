@@ -2720,6 +2720,29 @@ paths:
               schema:
                 $ref: '#/components/schemas/Shift'
           description: ''
+  /api/shifts/{id}/lock-closures:
+    post:
+      operationId: shifts_lock_closures_create
+      description: Bloquea todas las islas enviadas de la jornada (todas o ninguna).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un Cadena UUID que identifique este shift.
+        required: true
+      tags:
+      - shifts
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shift'
+          description: ''
   /api/shifts/{id}/set-rate:
     post:
       operationId: shifts_set_rate_create
@@ -2740,6 +2763,30 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/SetRateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shift'
+          description: ''
+  /api/shifts/{id}/submit-closures:
+    post:
+      operationId: shifts_submit_closures_create
+      description: Envía a revisión todas las islas en borrador de la jornada (todas
+        o ninguna).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un Cadena UUID que identifique este shift.
+        required: true
+      tags:
+      - shifts
       security:
       - jwtAuth: []
       responses:

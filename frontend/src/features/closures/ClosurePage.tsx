@@ -6,7 +6,7 @@
  * isla, en el detalle de la jornada.
  */
 import { AlertTriangle, Lock, Save, Send, ShieldCheck, Undo2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { attendants, closureAdjustments, closures, denominations, terminals } from '../../api/resources'
@@ -67,7 +67,19 @@ export function ClosurePage() {
   return <ClosureEditor id={id!} />
 }
 
-export function ClosureEditor({ id, embedded = false }: { id: string; embedded?: boolean }) {
+/** Lo que una isla en borrador expone a la jornada para guardarla y enviarla junto con las demás. */
+export interface IslandDraftHandle {
+  island: string
+  save: () => Promise<unknown>
+  missingFinals: boolean
+  diffUsd: number
+}
+
+/**
+ * `embedded`: la isla se muestra dentro de la jornada, que guarda, envía y bloquea todas las
+ * islas a la vez; por eso aquí no aparecen esos botones, solo «Devolver» para una isla enviada.
+ */
+export function ClosureEditor({ id, embedded = false, onRegister }: { id: string; embedded?: boolean; onRegister?: (id: string, handle: IslandDraftHandle | null) => void }) {
   const query = closures.useOne(id)
   const closure = query.data
   const editable = closure?.status === 'DRAFT'
@@ -158,6 +170,22 @@ export function ClosureEditor({ id, embedded = false }: { id: string; embedded?:
     return [...totals.values()]
   }, [closure, editable, payload, denoms.data, terms.data])
 
+  // Se publica en cada render para que la jornada siempre guarde el borrador vigente.
+  useEffect(() => {
+    if (!onRegister) return
+    if (!closure || !draft || !payload || closure.status !== 'DRAFT') {
+      onRegister(id, null)
+      return
+    }
+    onRegister(id, {
+      island: closure.island_name,
+      save: () => save.mutateAsync({ id: closure.id, body: payload as never }),
+      missingFinals: Object.values(draft.readings).some((r) => r.final === ''),
+      diffUsd: Number(preview?.diffUsd ?? closure.diff_usd),
+    })
+  })
+  useEffect(() => () => onRegister?.(id, null), [id, onRegister])
+
   if (query.isLoading || !closure || !draft) return query.error ? <ErrorAlert error={query.error} /> : <Spinner full={!embedded} />
 
   // En borrador se muestra la vista previa; enviado o bloqueado, las cifras oficiales del servidor.
@@ -190,7 +218,7 @@ export function ClosureEditor({ id, embedded = false }: { id: string; embedded?:
 
   const actions = (
     <>
-      {editable && (
+      {editable && !embedded && (
         <>
           <Can perm="closures.change_closure">
             <button className="btn-secondary" disabled={busy} onClick={() => saveDraft().catch(() => undefined)}><Save className="size-4" /> Guardar borrador</button>
@@ -203,7 +231,7 @@ export function ClosureEditor({ id, embedded = false }: { id: string; embedded?:
       {closure.status === 'SUBMITTED' && (
         <>
           <Can perm="closures.reopen_closure"><button className="btn-secondary" disabled={busy} onClick={() => setConfirm('reopen')}><Undo2 className="size-4" /> Devolver</button></Can>
-          <Can perm="closures.lock_closure"><button className="btn-primary" disabled={busy} onClick={() => setConfirm('lock')}><Lock className="size-4" /> Bloquear</button></Can>
+          {!embedded && <Can perm="closures.lock_closure"><button className="btn-primary" disabled={busy} onClick={() => setConfirm('lock')}><Lock className="size-4" /> Bloquear</button></Can>}
         </>
       )}
     </>
