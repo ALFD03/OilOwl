@@ -130,3 +130,27 @@ def test_station_code_migration_derives_three_letters():
     s1.refresh_from_db()
     s2.refresh_from_db()
     assert s1.code == "PLA" and s2.code == "PLB"
+
+
+def test_fuel_types_get_a_global_code(admin, client_for):
+    client = client_for(admin)
+    first = client.post("/api/fuel-types", {"name": "Gasolina 91", "code": "IGNORADO"}, format="json")
+    assert first.status_code == 201, first.data
+    second = client.post("/api/fuel-types", {"name": "Gasoil"}, format="json").data
+    assert (first.data["code"], second["code"]) == ("CB-0001", "CB-0002")
+    client.patch(f"/api/fuel-types/{second['id']}", {"code": "X", "name": "Gasoil B"}, format="json")
+    assert FuelType.objects.get(pk=second["id"]).code == "CB-0002"
+
+
+def test_fuel_type_migration_renumbers_in_creation_order():
+    later = FuelType.objects.create(code="CB-0001", name="Gasoil")  # choca con el código nuevo del primero
+    FuelType.objects.filter(pk=later.pk).update(created_at="2030-01-01T00:00:00Z")
+    first = FuelType.objects.create(code="G91", name="Gasolina 91")
+
+    migration = importlib.import_module("apps.catalog.migrations.0006_fuel_type_codes")
+    migration.renumber_fuel_types(apps, None)
+
+    first.refresh_from_db()
+    later.refresh_from_db()
+    assert (first.code, later.code) == ("CB-0001", "CB-0002")
+    assert FuelType.objects.create(name="Gasolina 95").code == "CB-0003"

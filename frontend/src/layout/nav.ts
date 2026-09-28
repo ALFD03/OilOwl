@@ -1,6 +1,6 @@
 import {
   BarChart3, Building2, CalendarClock, ClipboardCheck, Coins, CreditCard, DollarSign, Droplets, Fuel, History,
-  LayoutGrid, Receipt, ScrollText, Shield, Tag, Truck, Users, Warehouse, UserCog, Gauge, Scale, type LucideIcon,
+  LayoutGrid, Receipt, Ruler, ScrollText, Shield, Tag, Truck, Users, Warehouse, UserCog, Gauge, Scale, type LucideIcon,
 } from 'lucide-react'
 
 export interface NavItem {
@@ -36,6 +36,7 @@ export const NAV: { section: string; items: NavItem[] }[] = [
       { to: '/config/islas', label: 'Islas', icon: LayoutGrid, perm: 'catalog.view_island' },
       { to: '/config/surtidores', label: 'Surtidores', icon: Fuel, perm: 'catalog.view_pump' },
       { to: '/config/tanques', label: 'Tanques', icon: Warehouse, perm: 'inventory.view_tank' },
+      { to: '/config/aforo', label: 'Aforo de tanques', icon: Ruler, perm: 'inventory.view_tank' },
       { to: '/config/combustibles', label: 'Combustibles', icon: Droplets, perm: 'catalog.view_fueltype' },
       { to: '/config/precios', label: 'Precios', icon: Tag, perm: 'catalog.view_fuelprice' },
       { to: '/config/denominaciones', label: 'Denominaciones', icon: Coins, perm: 'catalog.view_denomination' },

@@ -1,12 +1,15 @@
 /**
  * Cierre de caja por isla: lecturas finales → arqueo (efectivo Bs/$, puntos, BioPago) →
  * resumen de sobrante/faltante → enviar → bloquear. El servidor es la fuente de verdad.
+ *
+ * `ClosureEditor` se usa tanto en su propia página (/cierres/:id) como incrustado, una vez por
+ * isla, en el detalle de la jornada.
  */
 import { AlertTriangle, Lock, Save, Send, ShieldCheck, Undo2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
-import { closureAdjustments, closures, denominations, terminals } from '../../api/resources'
+import { attendants, closureAdjustments, closures, denominations, terminals } from '../../api/resources'
 import type { Closure, ClosureLine, MeterReading } from '../../api/types'
 import { Can } from '../../auth/Can'
 import { DataTable } from '../../components/data/DataTable'
@@ -25,6 +28,7 @@ import { date, dateTime, liters, money, rate, signedLiters, signedMoney } from '
 const METHOD_LABEL: Record<string, string> = { CASH_USD: 'Efectivo $', CASH_VES: 'Efectivo Bs', POS: 'Punto de venta', BIOPAGO: 'BioPago' }
 
 interface Draft {
+  attendant: string
   readings: Record<string, { initial: string; final: string }>
   cash: Record<string, number>
   pos: Record<string, TerminalEntry>
@@ -33,7 +37,7 @@ interface Draft {
 }
 
 function draftFrom(closure: Closure): Draft {
-  const draft: Draft = { readings: {}, cash: {}, pos: {}, bio: {}, notes: closure.notes ?? '' }
+  const draft: Draft = { attendant: closure.attendant ?? '', readings: {}, cash: {}, pos: {}, bio: {}, notes: closure.notes ?? '' }
   closure.readings.forEach((r: MeterReading) => {
     draft.readings[r.pump] = { initial: r.initial, final: r.final ?? '' }
   })
@@ -60,12 +64,29 @@ function SummaryRow({ label, usd, ves, lit, strong, tone }: { label: string; usd
 
 export function ClosurePage() {
   const { id } = useParams()
+  return <ClosureEditor id={id!} />
+}
+
+/** Lo que una isla en borrador expone a la jornada para guardarla y enviarla junto con las demás. */
+export interface IslandDraftHandle {
+  island: string
+  save: () => Promise<unknown>
+  missingFinals: boolean
+  diffUsd: number
+}
+
+/**
+ * `embedded`: la isla se muestra dentro de la jornada, que guarda, envía y bloquea todas las
+ * islas a la vez; por eso aquí no aparecen esos botones, solo «Devolver» para una isla enviada.
+ */
+export function ClosureEditor({ id, embedded = false, onRegister }: { id: string; embedded?: boolean; onRegister?: (id: string, handle: IslandDraftHandle | null) => void }) {
   const query = closures.useOne(id)
   const closure = query.data
   const editable = closure?.status === 'DRAFT'
 
   const denoms = denominations.useAll({ is_active: true })
   const terms = terminals.useAll({ station: closure?.station ?? '', is_active: true }, { enabled: !!closure })
+  const people = attendants.useAll({ station: closure?.station ?? '', is_active: true }, { enabled: !!closure && editable })
   const save = closures.useUpdate()
   const submit = closures.useAction('submit')
   const reopen = closures.useAction<{ reason: string }>('reopen')
@@ -101,6 +122,7 @@ export function ClosurePage() {
     addTerminals(draft.pos, 'POS')
     addTerminals(draft.bio, 'BIOPAGO')
     return {
+      attendant: draft.attendant || null,
       notes: draft.notes,
       readings: Object.entries(draft.readings).map(([pump, r]) => ({ pump, initial: r.initial, final: r.final === '' ? null : r.final })),
       lines,
@@ -148,7 +170,23 @@ export function ClosurePage() {
     return [...totals.values()]
   }, [closure, editable, payload, denoms.data, terms.data])
 
-  if (query.isLoading || !closure || !draft) return query.error ? <ErrorAlert error={query.error} /> : <Spinner full />
+  // Se publica en cada render para que la jornada siempre guarde el borrador vigente.
+  useEffect(() => {
+    if (!onRegister) return
+    if (!closure || !draft || !payload || closure.status !== 'DRAFT') {
+      onRegister(id, null)
+      return
+    }
+    onRegister(id, {
+      island: closure.island_name,
+      save: () => save.mutateAsync({ id: closure.id, body: payload as never }),
+      missingFinals: Object.values(draft.readings).some((r) => r.final === ''),
+      diffUsd: Number(preview?.diffUsd ?? closure.diff_usd),
+    })
+  })
+  useEffect(() => () => onRegister?.(id, null), [id, onRegister])
+
+  if (query.isLoading || !closure || !draft) return query.error ? <ErrorAlert error={query.error} /> : <Spinner full={!embedded} />
 
   // En borrador se muestra la vista previa; enviado o bloqueado, las cifras oficiales del servidor.
   const s = editable && preview
@@ -178,37 +216,57 @@ export function ClosurePage() {
     }
   }
 
+  const actions = (
+    <>
+      {editable && !embedded && (
+        <>
+          <Can perm="closures.change_closure">
+            <button className="btn-secondary" disabled={busy} onClick={() => saveDraft().catch(() => undefined)}><Save className="size-4" /> Guardar borrador</button>
+          </Can>
+          <Can perm="closures.submit_closure">
+            <button className="btn-primary" disabled={busy || missingFinals} title={missingFinals ? 'Faltan lecturas finales' : ''} onClick={() => setConfirm('submit')}><Send className="size-4" /> Enviar</button>
+          </Can>
+        </>
+      )}
+      {closure.status === 'SUBMITTED' && (
+        <>
+          <Can perm="closures.reopen_closure"><button className="btn-secondary" disabled={busy} onClick={() => setConfirm('reopen')}><Undo2 className="size-4" /> Devolver</button></Can>
+          {!embedded && <Can perm="closures.lock_closure"><button className="btn-primary" disabled={busy} onClick={() => setConfirm('lock')}><Lock className="size-4" /> Bloquear</button></Can>}
+        </>
+      )}
+    </>
+  )
+
   return (
     <div className="space-y-5">
-      <PageHeader
-        title={`Cierre ${closure.island_name} · ${date(closure.shift_date)}`}
-        description={
-          <span className="inline-flex flex-wrap items-center gap-2">
-            <StatusBadge value={closure.status} /> Tasa {rate(closure.rate)} Bs/$ · {closure.attendant_name ?? 'Sin bombero'} ·{' '}
-            <Link to={`/jornadas/${closure.shift}`} className="underline">Ver jornada</Link>
-          </span>
-        }
-        actions={
-          <>
-            {editable && (
-              <>
-                <Can perm="closures.change_closure">
-                  <button className="btn-secondary" disabled={busy} onClick={() => saveDraft().catch(() => undefined)}><Save className="size-4" /> Guardar borrador</button>
-                </Can>
-                <Can perm="closures.submit_closure">
-                  <button className="btn-primary" disabled={busy || missingFinals} title={missingFinals ? 'Faltan lecturas finales' : ''} onClick={() => setConfirm('submit')}><Send className="size-4" /> Enviar</button>
-                </Can>
-              </>
-            )}
-            {closure.status === 'SUBMITTED' && (
-              <>
-                <Can perm="closures.reopen_closure"><button className="btn-secondary" disabled={busy} onClick={() => setConfirm('reopen')}><Undo2 className="size-4" /> Devolver</button></Can>
-                <Can perm="closures.lock_closure"><button className="btn-primary" disabled={busy} onClick={() => setConfirm('lock')}><Lock className="size-4" /> Bloquear</button></Can>
-              </>
-            )}
-          </>
-        }
-      />
+      {embedded ? (
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="font-display text-2xl font-semibold">{closure.island_name}</h2>
+            <div className="text-muted mt-1 inline-flex flex-wrap items-center gap-2 text-sm">
+              <StatusBadge value={closure.status} />
+              {editable ? (
+                <select className="input w-auto py-1 text-sm" aria-label={`Bombero de ${closure.island_name}`} value={draft.attendant} onChange={(e) => setDraft({ ...draft, attendant: e.target.value })}>
+                  <option value="">— Sin bombero —</option>
+                  {people.data?.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              ) : (closure.attendant_name ?? 'Sin bombero')}
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">{actions}</div>
+        </div>
+      ) : (
+        <PageHeader
+          title={`Cierre ${closure.island_name} · ${date(closure.shift_date)}`}
+          description={
+            <span className="inline-flex flex-wrap items-center gap-2">
+              <StatusBadge value={closure.status} /> Tasa {rate(closure.rate)} Bs/$ · {closure.attendant_name ?? 'Sin bombero'} ·{' '}
+              <Link to={`/jornadas/${closure.shift}`} className="underline">Ver jornada</Link>
+            </span>
+          }
+          actions={actions}
+        />
+      )}
 
       {closure.status === 'LOCKED' && (
         <Alert tone="success">
@@ -218,7 +276,7 @@ export function ClosurePage() {
           </div>
         </Alert>
       )}
-      {!(Number(closure.rate) > 0) && (
+      {!embedded && !(Number(closure.rate) > 0) && (
         <Alert tone="error">
           La jornada tiene una tasa de cambio inválida ({rate(closure.rate)}), por lo que los pagos en bolívares no se pueden convertir a dólares.{' '}
           <Link to={`/jornadas/${closure.shift}`} className="font-medium underline">Corríjala con «Cambiar tasa» en la jornada</Link>.

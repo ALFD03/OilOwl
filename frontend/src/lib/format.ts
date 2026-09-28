@@ -46,6 +46,11 @@ export function dateTime(value: string | null | undefined) {
   return new Date(value).toLocaleString(LOCALE, { dateStyle: 'short', timeStyle: 'short' })
 }
 
+export function time(value: string | null | undefined) {
+  if (!value) return '—'
+  return new Date(value).toLocaleTimeString(LOCALE, { timeStyle: 'short' })
+}
+
 export function today() {
   const now = new Date()
   return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 10)

@@ -9,6 +9,7 @@ import { AuditPage } from './features/audit/AuditPage'
 import * as catalog from './features/catalog/pages'
 import { ClosurePage } from './features/closures/ClosurePage'
 import { ClosuresHistoryPage } from './features/closures/ClosuresHistoryPage'
+import { CalibrationPage } from './features/inventory/CalibrationPage'
 import * as inventory from './features/inventory/pages'
 import { ShiftDetailPage } from './features/operations/ShiftDetailPage'
 import { ShiftsPage } from './features/operations/ShiftsPage'
@@ -39,6 +40,7 @@ const ROUTES: [string, string, React.ComponentType][] = [
   ['config/islas', 'catalog.view_island', catalog.IslandsPage],
   ['config/surtidores', 'catalog.view_pump', catalog.PumpsPage],
   ['config/tanques', 'inventory.view_tank', catalog.TanksPage],
+  ['config/aforo', 'inventory.view_tank', CalibrationPage],
   ['config/combustibles', 'catalog.view_fueltype', catalog.FuelTypesPage],
   ['config/precios', 'catalog.view_fuelprice', catalog.FuelPricesPage],
   ['config/denominaciones', 'catalog.view_denomination', catalog.DenominationsPage],

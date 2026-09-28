@@ -948,6 +948,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/shifts/{id}/lock-closures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Bloquea todas las islas enviadas de la jornada (todas o ninguna). */
+        post: operations["shifts_lock_closures_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/shifts/{id}/set-rate": {
         parameters: {
             query?: never;
@@ -959,6 +976,40 @@ export interface paths {
         put?: never;
         /** @description CRUD completo estándar. Los catálogos se desactivan en lugar de borrarse. */
         post: operations["shifts_set_rate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/shifts/{id}/submit-closures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Envía a revisión todas las islas en borrador de la jornada (todas o ninguna). */
+        post: operations["shifts_submit_closures_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/shifts/{id}/tanks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Inventario de la jornada: medición de apertura, descargas, vendido, esperado y conciliación. */
+        get: operations["shifts_tanks_list"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1309,6 +1360,18 @@ export interface components {
             user_agent?: string;
             user?: number | null;
         };
+        CalibrationPoint: {
+            /** Format: decimal */
+            cm: string;
+            /** Format: decimal */
+            liters: string;
+        };
+        CalibrationPointRequest: {
+            /** Format: decimal */
+            cm: string;
+            /** Format: decimal */
+            liters: string;
+        };
         ChainVerification: {
             valid: boolean;
             checked: number;
@@ -1320,6 +1383,10 @@ export interface components {
         ChangePasswordRequest: {
             current_password: string;
             new_password: string;
+        };
+        /** @description Medición final (cm) de cada tanque activo de la estación. */
+        CloseShiftRequest: {
+            tank_readings?: components["schemas"]["TankHeightRequest"][];
         };
         /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
         Closure: {
@@ -1536,6 +1603,7 @@ export interface components {
         Delivery: {
             /** Format: uuid */
             readonly id: string;
+            readonly tank_name: string;
             /** Format: date-time */
             readonly created_at: string;
             /** Format: date-time */
@@ -1563,6 +1631,11 @@ export interface components {
             readonly station: string;
             /** Format: uuid */
             tank: string;
+            /**
+             * Jornada
+             * Format: uuid
+             */
+            shift?: string | null;
         };
         /** @description La estación se toma del tanque; no la envía el cliente. */
         DeliveryRequest: {
@@ -1582,6 +1655,11 @@ export interface components {
             supplier?: string;
             /** Format: uuid */
             tank: string;
+            /**
+             * Jornada
+             * Format: uuid
+             */
+            shift?: string | null;
         };
         /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
         Denomination: {
@@ -1740,7 +1818,7 @@ export interface components {
             /** Format: date-time */
             readonly updated_at: string;
             /** Código */
-            code: string;
+            readonly code: string;
             /** Nombre */
             name: string;
             /** Activo */
@@ -1751,8 +1829,6 @@ export interface components {
         };
         /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
         FuelTypeRequest: {
-            /** Código */
-            code: string;
             /** Nombre */
             name: string;
             /** Activo */
@@ -1996,6 +2072,12 @@ export interface components {
             pages: number;
             results: components["schemas"]["Shift"][];
         };
+        PaginatedShiftTankList: {
+            count: number;
+            page: number;
+            pages: number;
+            results: components["schemas"]["ShiftTank"][];
+        };
         PaginatedShiftTemplateList: {
             count: number;
             page: number;
@@ -2092,8 +2174,6 @@ export interface components {
         };
         /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
         PatchedFuelTypeRequest: {
-            /** Código */
-            code?: string;
             /** Nombre */
             name?: string;
             /** Activo */
@@ -2167,6 +2247,10 @@ export interface components {
         PatchedShiftRequest: {
             /** Format: decimal */
             rate?: string | null;
+            tank_readings?: components["schemas"]["TankHeightRequest"][];
+            initials?: {
+                [key: string]: string;
+            };
             /**
              * Fecha
              * Format: date
@@ -2223,6 +2307,7 @@ export interface components {
         };
         /** @description Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`). */
         PatchedTankRequest: {
+            calibration?: components["schemas"]["CalibrationPointRequest"][];
             /** Nombre */
             name?: string;
             /** Activo */
@@ -2351,6 +2436,11 @@ export interface components {
             /** Format: uuid */
             readonly station: string;
             readonly fuel_type_name: string;
+            /**
+             * Format: decimal
+             * @description Lectura final del último cierre (inicial sugerida).
+             */
+            readonly last_final: string | null;
             /** Format: date-time */
             readonly created_at: string;
             /** Format: date-time */
@@ -2427,6 +2517,10 @@ export interface components {
             /** Format: uuid */
             readonly id: string;
             readonly tank_name: string;
+            /** Format: decimal */
+            readonly opening_height_cm: string | null;
+            /** Format: decimal */
+            readonly closing_height_cm: string | null;
             /** Format: date-time */
             readonly created_at: string;
             /** Format: date-time */
@@ -2553,10 +2647,33 @@ export interface components {
              */
             readonly exchange_rate: string | null;
         };
+        ShiftReading: {
+            /** Format: uuid */
+            readonly id: string;
+            /**
+             * Altura (cm)
+             * Format: decimal
+             */
+            height_cm?: string | null;
+            /**
+             * Litros
+             * Format: decimal
+             */
+            liters: string;
+            /**
+             * Fecha de medición
+             * Format: date-time
+             */
+            measured_at?: string;
+        };
         /** @description Serializer estándar: los campos de auditoría siempre son de solo lectura. */
         ShiftRequest: {
             /** Format: decimal */
             rate?: string | null;
+            tank_readings?: components["schemas"]["TankHeightRequest"][];
+            initials?: {
+                [key: string]: string;
+            };
             /**
              * Fecha
              * Format: date
@@ -2574,6 +2691,28 @@ export interface components {
              * Format: uuid
              */
             shift_template?: string | null;
+        };
+        /** @description Una fila del inventario de la jornada (GET /shifts/{id}/tanks). */
+        ShiftTank: {
+            /** Format: uuid */
+            tank: string;
+            tank_code: string;
+            tank_name: string;
+            fuel_type_name: string;
+            /** Format: decimal */
+            capacity: string;
+            /** Format: decimal */
+            tolerance_pct: string;
+            calibration: components["schemas"]["CalibrationPoint"][];
+            opening: components["schemas"]["ShiftReading"] | null;
+            closing: components["schemas"]["ShiftReading"] | null;
+            /** Format: decimal */
+            deliveries_liters: string | null;
+            /** Format: decimal */
+            sold_liters: string | null;
+            /** Format: decimal */
+            expected_liters: string | null;
+            readonly reconciliation: components["schemas"]["Reconciliation"] | null;
         };
         /** @description Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`). */
         ShiftTemplate: {
@@ -2686,6 +2825,7 @@ export interface components {
             readonly last_reading: {
                 [key: string]: unknown;
             } | null;
+            calibration?: components["schemas"]["CalibrationPoint"][];
             /** Format: date-time */
             readonly created_at: string;
             /** Format: date-time */
@@ -2719,14 +2859,36 @@ export interface components {
              */
             fuel_type: string;
         };
-        /** @description La estación se toma del tanque; no la envía el cliente. */
+        /** @description Medición en cm de un tanque al abrir o cerrar la jornada. */
+        TankHeight: {
+            /** Format: uuid */
+            tank: string;
+            /** Format: decimal */
+            height_cm: string;
+        };
+        /** @description Medición en cm de un tanque al abrir o cerrar la jornada. */
+        TankHeightRequest: {
+            /** Format: uuid */
+            tank: string;
+            /** Format: decimal */
+            height_cm: string;
+        };
+        /** @description Medición puntual: se registra la altura en cm y el servidor calcula los litros con el aforo. */
         TankReading: {
             /** Format: uuid */
             readonly id: string;
+            readonly tank_name: string;
+            /** Format: decimal */
+            height_cm: string;
             /** Format: date-time */
             readonly created_at: string;
             /** Format: date-time */
             readonly updated_at: string;
+            /**
+             * Tipo
+             * @default SPOT
+             */
+            readonly kind: components["schemas"]["TankReadingKindEnum"];
             /**
              * Fecha de medición
              * Format: date-time
@@ -2736,12 +2898,7 @@ export interface components {
              * Litros
              * Format: decimal
              */
-            liters: string;
-            /**
-             * Altura (cm)
-             * Format: decimal
-             */
-            height_cm?: string | null;
+            readonly liters: string;
             method?: components["schemas"]["TankReadingMethodEnum"];
             notes?: string;
             readonly created_by: number | null;
@@ -2753,7 +2910,19 @@ export interface components {
             readonly station: string;
             /** Format: uuid */
             tank: string;
+            /**
+             * Jornada
+             * Format: uuid
+             */
+            readonly shift: string | null;
         };
+        /**
+         * @description * `OPENING` - Apertura de jornada
+         *     * `CLOSING` - Cierre de jornada
+         *     * `SPOT` - Puntual
+         * @enum {string}
+         */
+        TankReadingKindEnum: "OPENING" | "CLOSING" | "SPOT";
         /**
          * @description * `STICK` - Varilla
          *     * `PROBE` - Sonda
@@ -2761,23 +2930,15 @@ export interface components {
          * @enum {string}
          */
         TankReadingMethodEnum: "STICK" | "PROBE" | "MANUAL";
-        /** @description La estación se toma del tanque; no la envía el cliente. */
+        /** @description Medición puntual: se registra la altura en cm y el servidor calcula los litros con el aforo. */
         TankReadingRequest: {
+            /** Format: decimal */
+            height_cm: string;
             /**
              * Fecha de medición
              * Format: date-time
              */
             measured_at?: string;
-            /**
-             * Litros
-             * Format: decimal
-             */
-            liters: string;
-            /**
-             * Altura (cm)
-             * Format: decimal
-             */
-            height_cm?: string | null;
             method?: components["schemas"]["TankReadingMethodEnum"];
             notes?: string;
             /** Format: uuid */
@@ -2785,6 +2946,7 @@ export interface components {
         };
         /** @description Campos que se fijan al crear y no se pueden cambiar después (`immutable_fields`). */
         TankRequest: {
+            calibration?: components["schemas"]["CalibrationPointRequest"][];
             /** Nombre */
             name: string;
             /** Activo */
@@ -5206,6 +5368,32 @@ export interface operations {
             };
             cookie?: never;
         };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CloseShiftRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Shift"];
+                };
+            };
+        };
+    };
+    shifts_lock_closures_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este shift. */
+                id: string;
+            };
+            cookie?: never;
+        };
         requestBody?: never;
         responses: {
             200: {
@@ -5240,6 +5428,69 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Shift"];
+                };
+            };
+        };
+    };
+    shifts_submit_closures_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este shift. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Shift"];
+                };
+            };
+        };
+    };
+    shifts_tanks_list: {
+        parameters: {
+            query?: {
+                date?: string;
+                date__gte?: string;
+                date__lte?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+                /** @description Número de resultados a devolver por página. */
+                page_size?: number;
+                /** @description Un término de búsqueda. */
+                search?: string;
+                shift_template?: string;
+                /**
+                 * @description * `DRAFT` - Borrador
+                 *     * `SUBMITTED` - Enviado
+                 *     * `LOCKED` - Bloqueado
+                 */
+                status?: "DRAFT" | "LOCKED" | "SUBMITTED";
+            };
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este shift. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedShiftTankList"];
                 };
             };
         };
