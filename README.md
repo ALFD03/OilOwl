@@ -81,7 +81,7 @@ Cada entorno tiene su base de datos y **sus propias llaves**: un dato cifrado o 
 | `DJANGO_SECRET_KEY`, `JWT_SIGNING_KEY` | Llaves de firma |
 | `FIELD_ENCRYPTION_KEYS` | Llaves Fernet separadas por coma (la primera cifra) |
 | `HASH_CHAIN_KEY` | HMAC de la cadena de cierres. No debe cambiarse |
-| `CRON_SECRET` | Protege `/api/cron/fetch-rate` (Vercel Cron, diario a las 07:00 VET) |
+| `CRON_SECRET` | Protege `/api/cron/fetch-rate` (Vercel Cron, diario a las 04:00 VET) |
 | `ALLOWED_HOSTS` | `.vercel.app` y dominios propios |
 | `CACHE_URL` | Opcional: Redis para los rate limits |
 
