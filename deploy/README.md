@@ -7,7 +7,7 @@ Alternativa a Vercel, guardada en la rama aislada `deploy/vps`. Vercel no despli
 Internet ──► web (Caddy :80/:443, HTTPS automático)
               ├── /api/*  ──► backend (gunicorn + Django) ──► Supabase (pooler, TLS)
               └── /*      ──► frontend compilado (SPA)
-cron (diario 07:00 VET) ──► backend /api/cron/fetch-rate
+cron (diario 04:00 VET) ──► backend /api/cron/fetch-rate
 ```
 
 | Archivo | Reemplaza a |
