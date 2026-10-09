@@ -8,6 +8,6 @@ class CoreConfig(AppConfig):
     verbose_name = "Núcleo"
 
     def ready(self):
-        from .signals import harden_public_schema
+        from .signals import harden_schema
 
-        post_migrate.connect(harden_public_schema, sender=self)
+        post_migrate.connect(harden_schema, sender=self)
